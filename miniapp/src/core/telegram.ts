@@ -16,9 +16,21 @@ declare global {
           hide: () => void;
           onClick: (callback: () => void) => void;
         };
+        HapticFeedback: {
+          impactOccurred: (style: 'light' | 'medium' | 'heavy') => void;
+        };
+        // + інші API
       };
     };
   }
 }
 
 export const WebApp = window.Telegram?.WebApp;
+
+// Додати обгортки для зручності
+export const initTelegram = () => {
+  if (WebApp?.ready) {
+    WebApp.ready();
+    WebApp.expand();
+  }
+};
