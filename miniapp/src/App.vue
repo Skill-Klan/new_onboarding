@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import FAQ from './components/FAQ.vue'
+// Видалити імпорт FAQ, залишити тільки роутер
 </script>
 
 <template>
   <div id="app">
-    <FAQ />
+    <!-- RouterView замінить статичний FAQ -->
+    <router-view />
   </div>
 </template>
