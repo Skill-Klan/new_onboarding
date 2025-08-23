@@ -193,18 +193,59 @@ const navigateToFAQ = () => {
   }
   
   .course-item {
-    padding: 16px;
-    background: rgba(75, 85, 99, 0.3);
-    border-radius: 8px;
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    text-align: center;
-    transition: all 0.2s ease;
-  }
+  padding: 16px;
+  background: rgba(75, 85, 99, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.course-link {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.course-link:hover {
+  border-color: #8b5cf6;
+  background: rgba(75, 85, 99, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.course-link:active {
+  transform: translateY(0);
+}
   
-  .course-item:hover {
+.course-item:hover {
     border-color: #8b5cf6;
     background: rgba(75, 85, 99, 0.5);
   }
+
+  /* Додаткові стилі для мобільних */
+.course-link::after {
+  content: '👆';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 14px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Адаптивність */
+@media (max-width: 768px) {
+  .course-link::after {
+    font-size: 16px;
+    top: 6px;
+    right: 6px;
+  }
+  
+  .course-link:hover {
+    transform: none; /* Вимикаємо hover ефекти на мобільних */
+  }
+}
   
   .course-icon {
     font-size: 24px;
