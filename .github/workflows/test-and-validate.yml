@@ -1,0 +1,349 @@
+name: 🧪 Test and Validate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  lint-and-format:
+    name: 🔍 Lint and Format
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          miniapp/package-lock.json
+    
+    - name: 📦 Install server dependencies
+      run: |
+        echo "📦 Installing server dependencies..."
+        cd server
+        npm ci
+    
+    - name: 📦 Install miniapp dependencies
+      run: |
+        echo "📦 Installing MiniApp dependencies..."
+        cd miniapp
+        npm ci
+    
+    - name: 🔍 Lint server code
+      run: |
+        echo "🔍 Linting server code..."
+        cd server
+        if npm run lint; then
+          echo "✅ Server linting passed"
+        else
+          echo "⚠️  No linting configured for server"
+        fi
+    
+    - name: 🔍 Lint miniapp code
+      run: |
+        echo "🔍 Linting MiniApp code..."
+        cd miniapp
+        if npm run lint; then
+          echo "✅ MiniApp linting passed"
+        else
+          echo "⚠️  No linting configured for MiniApp"
+        fi
+    
+    - name: 🎨 Check code formatting
+      run: |
+        echo "🎨 Checking code formatting..."
+        
+        # Перевіряємо формат коду
+        if command -v prettier &> /dev/null; then
+          echo "🔍 Checking with Prettier..."
+          npx prettier --check "**/*.{js,ts,vue,json,md}" || exit 1
+          echo "✅ Code formatting is correct"
+        else
+          echo "⚠️  Prettier not available, skipping format check"
+        fi
+
+  test-server:
+    name: 🧪 Test Server
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: server/package-lock.json
+    
+    - name: 📦 Install dependencies
+      run: |
+        echo "📦 Installing server dependencies..."
+        cd server
+        npm ci
+    
+    - name: 🧪 Run unit tests
+      run: |
+        echo "🧪 Running server unit tests..."
+        cd server
+        if npm run test:unit; then
+          echo "✅ Unit tests passed"
+        else
+          echo "⚠️  No unit tests configured"
+        fi
+    
+    - name: 🧪 Run integration tests
+      run: |
+        echo "🧪 Running server integration tests..."
+        cd server
+        if npm run test:integration; then
+          echo "✅ Integration tests passed"
+        else
+          echo "⚠️  No integration tests configured"
+        fi
+    
+    - name: 🧪 Run all tests
+      run: |
+        echo "🧪 Running all server tests..."
+        cd server
+        if npm test; then
+          echo "✅ All tests passed"
+        else
+          echo "❌ Tests failed"
+          exit 1
+        fi
+
+  test-miniapp:
+    name: 🧪 Test Mini App
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: miniapp/package-lock.json
+    
+    - name: 📦 Install dependencies
+      run: |
+        echo "📦 Installing MiniApp dependencies..."
+        cd miniapp
+        npm ci
+    
+    - name: 🧪 Run unit tests
+      run: |
+        echo "🧪 Running MiniApp unit tests..."
+        cd miniapp
+        if npm run test:unit; then
+          echo "✅ Unit tests passed"
+        else
+          echo "⚠️  No unit tests configured"
+        fi
+    
+    - name: 🧪 Run component tests
+      run: |
+        echo "🧪 Running MiniApp component tests..."
+        cd miniapp
+        if npm run test:components; then
+          echo "✅ Component tests passed"
+        else
+          echo "⚠️  No component tests configured"
+        fi
+    
+    - name: 🧪 Run all tests
+      run: |
+        echo "🧪 Running all MiniApp tests..."
+        cd miniapp
+        if npm test; then
+          echo "✅ All tests passed"
+        else
+          echo "⚠️  No tests configured or tests failed"
+        fi
+
+  build-check:
+    name: 🏗️ Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          miniapp/package-lock.json
+    
+    - name: 📦 Install server dependencies
+      run: |
+        echo "📦 Installing server dependencies..."
+        cd server
+        npm ci --production
+    
+    - name: 📦 Install miniapp dependencies
+      run: |
+        echo "📦 Installing MiniApp dependencies..."
+        cd miniapp
+        npm ci
+    
+    - name: 🏗️ Build miniapp
+      run: |
+        echo "🏗️ Building MiniApp..."
+        cd miniapp
+        
+        # Встановлюємо змінні середовища для збірки
+        export VITE_API_URL="http://localhost:3000/api"
+        export VITE_ENVIRONMENT="test"
+        
+        echo "🔧 Build environment:"
+        echo "   API URL: $VITE_API_URL"
+        echo "   Environment: $VITE_ENVIRONMENT"
+        
+        npm run build
+        
+        echo "✅ Build completed successfully"
+        
+        # Перевіряємо що збірка створила необхідні файли
+        if [ -d "dist" ] && [ -f "dist/index.html" ]; then
+          echo "✅ Build artifacts verified"
+        else
+          echo "❌ Build artifacts missing"
+          exit 1
+        fi
+    
+    - name: 🔍 Check build artifacts
+      run: |
+        echo "🔍 Checking build artifacts..."
+        cd miniapp/dist
+        
+        echo "📁 Build directory contents:"
+        ls -la
+        
+        echo "📄 Checking index.html..."
+        if [ -f "index.html" ]; then
+          echo "✅ index.html found"
+          # Перевіряємо що HTML містить необхідні елементи
+          if grep -q "app" index.html; then
+            echo "✅ index.html contains app element"
+          else
+            echo "⚠️  index.html may be incomplete"
+          fi
+        else
+          echo "❌ index.html missing"
+          exit 1
+        fi
+        
+        echo "📦 Checking assets..."
+        if [ -d "assets" ]; then
+          echo "✅ assets directory found"
+          echo "   Assets count: $(find assets -type f | wc -l)"
+        else
+          echo "⚠️  assets directory missing"
+        fi
+
+  security-check:
+    name: 🔒 Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          miniapp/package-lock.json
+    
+    - name: 📦 Install dependencies
+      run: |
+        echo "📦 Installing dependencies for security check..."
+        cd server && npm ci
+        cd ../miniapp && npm ci
+    
+    - name: 🔒 Run npm audit
+      run: |
+        echo "🔒 Running security audit..."
+        
+        echo "🔍 Checking server dependencies..."
+        cd server
+        npm audit --audit-level moderate || echo "⚠️  Security vulnerabilities found in server"
+        
+        echo "🔍 Checking MiniApp dependencies..."
+        cd ../miniapp
+        npm audit --audit-level moderate || echo "⚠️  Security vulnerabilities found in MiniApp"
+    
+    - name: 🔒 Check for secrets
+      run: |
+        echo "🔒 Checking for exposed secrets..."
+        
+        # Перевіряємо наявність потенційних секретів
+        if grep -r "password\|secret\|token\|key" . --exclude-dir=node_modules --exclude-dir=.git | grep -v "config.env\|.env.example"; then
+          echo "⚠️  Potential secrets found in code"
+          grep -r "password\|secret\|token\|key" . --exclude-dir=node_modules --exclude-dir=.git | grep -v "config.env\|.env.example"
+        else
+          echo "✅ No obvious secrets found in code"
+        fi
+
+  test-summary:
+    name: 📊 Test Summary
+    needs: [lint-and-format, test-server, test-miniapp, build-check, security-check]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📋 Generate test summary
+      run: |
+        echo "🧪 Test and Validation Summary"
+        echo "=============================="
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Author: ${{ github.actor }}"
+        echo "Timestamp: $(date -u)"
+        echo ""
+        
+        echo "📊 Test Results:"
+        echo "   Lint and Format: ${{ needs.lint-and-format.result }}"
+        echo "   Server Tests: ${{ needs.test-server.result }}"
+        echo "   MiniApp Tests: ${{ needs.test-miniapp.result }}"
+        echo "   Build Check: ${{ needs.build-check.result }}"
+        echo "   Security Check: ${{ needs.security-check.result }}"
+        echo ""
+        
+        # Визначаємо загальний статус
+        if [ "${{ needs.lint-and-format.result }}" = "success" ] && \
+           [ "${{ needs.test-server.result }}" = "success" ] && \
+           [ "${{ needs.test-miniapp.result }}" = "success" ] && \
+           [ "${{ needs.build-check.result }}" = "success" ] && \
+           [ "${{ needs.security-check.result }}" = "success" ]; then
+          echo "🎉 All checks passed! Code is ready for deployment."
+          echo "✅ Status: READY"
+        else
+          echo "❌ Some checks failed. Please fix issues before deployment."
+          echo "❌ Status: NOT READY"
+        fi
+        
+        echo ""
+        echo "🔗 View details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

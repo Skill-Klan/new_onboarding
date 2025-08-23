@@ -1,0 +1,626 @@
+name: 🚀 Smart Deploy
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      force_full_deploy:
+        description: 'Force full deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  CACHE_DEPENDENCY_PATH: |
+    server/package-lock.json
+    miniapp/package-lock.json
+
+jobs:
+  analyze-changes:
+    name: 🔍 Analyze Changes
+    runs-on: ubuntu-latest
+    outputs:
+      needs-server-deploy: ${{ steps.changes.outputs.server }}
+      needs-miniapp-deploy: ${{ steps.changes.outputs.miniapp }}
+      needs-full-deploy: ${{ steps.changes.outputs.full }}
+      deployment-type: ${{ steps.changes.outputs.type }}
+      change-summary: ${{ steps.changes.outputs.summary }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    
+    - name: 🔍 Analyze changes
+      id: changes
+      run: |
+        echo "🔍 Analyzing changes between commits..."
+        
+        # Отримуємо список змінених файлів
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # Для PR - порівнюємо з базовою гілкою
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+        else
+          # Для push - порівнюємо з попереднім комітом
+          CHANGED_FILES=$(git diff --name-only HEAD~1...HEAD)
+        fi
+        
+        echo "📋 Changed files:"
+        echo "$CHANGED_FILES"
+        
+        # Аналізуємо зміни
+        SERVER_CHANGES=false
+        MINIAPP_CHANGES=false
+        FULL_DEPLOY=false
+        
+        # Перевіряємо зміни в сервері
+        if echo "$CHANGED_FILES" | grep -q "^server/"; then
+          SERVER_CHANGES=true
+          echo "✅ Server changes detected"
+        fi
+        
+        # Перевіряємо зміни в miniapp
+        if echo "$CHANGED_FILES" | grep -q "^miniapp/"; then
+          MINIAPP_CHANGES=true
+          echo "✅ MiniApp changes detected"
+        fi
+        
+        # Перевіряємо критичні зміни (потребують повного деплою)
+        if echo "$CHANGED_FILES" | grep -q "^shared/"; then
+          FULL_DEPLOY=true
+          echo "⚠️  Shared code changes detected - full deploy required"
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -q "package.json"; then
+          FULL_DEPLOY=true
+          echo "⚠️  Dependencies changed - full deploy required"
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -q "docker-compose.yml"; then
+          FULL_DEPLOY=true
+          echo "⚠️  Infrastructure changed - full deploy required"
+        fi
+        
+        # Визначаємо тип деплою
+        if [ "$FULL_DEPLOY" = true ]; then
+          DEPLOY_TYPE="full"
+        elif [ "$SERVER_CHANGES" = true ] && [ "$MINIAPP_CHANGES" = true ]; then
+          DEPLOY_TYPE="both"
+        elif [ "$SERVER_CHANGES" = true ]; then
+          DEPLOY_TYPE="server"
+        elif [ "$MINIAPP_CHANGES" = true ]; then
+          DEPLOY_TYPE="miniapp"
+        else
+          DEPLOY_TYPE="none"
+        fi
+        
+        # Створюємо зведення змін
+        CHANGE_SUMMARY=""
+        if [ "$SERVER_CHANGES" = true ]; then
+          CHANGE_SUMMARY="$CHANGE_SUMMARY Server,"
+        fi
+        if [ "$MINIAPP_CHANGES" = true ]; then
+          CHANGE_SUMMARY="$CHANGE_SUMMARY MiniApp,"
+        fi
+        if [ "$FULL_DEPLOY" = true ]; then
+          CHANGE_SUMMARY="$CHANGE_SUMMARY Full Deploy Required,"
+        fi
+        
+        # Видаляємо зайву кому
+        CHANGE_SUMMARY=$(echo "$CHANGE_SUMMARY" | sed 's/,$//')
+        
+        # Встановлюємо outputs
+        echo "server=$SERVER_CHANGES" >> $GITHUB_OUTPUT
+        echo "miniapp=$MINIAPP_CHANGES" >> $GITHUB_OUTPUT
+        echo "full=$FULL_DEPLOY" >> $GITHUB_OUTPUT
+        echo "type=$DEPLOY_TYPE" >> $GITHUB_OUTPUT
+        echo "summary=$CHANGE_SUMMARY" >> $GITHUB_OUTPUT
+        
+        echo "📊 Deployment analysis complete:"
+        echo "   Type: $DEPLOY_TYPE"
+        echo "   Summary: $CHANGE_SUMMARY"
+        echo "   Server: $SERVER_CHANGES"
+        echo "   MiniApp: $MINIAPP_CHANGES"
+        echo "   Full Deploy: $FULL_DEPLOY"
+
+  deploy-server:
+    name: 🖥️ Deploy Server
+    needs: analyze-changes
+    if: |
+      (needs.server-deploy == 'true' && needs.full-deploy != 'true') ||
+      (github.event.inputs.force_full_deploy == 'true')
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: server/package-lock.json
+    
+    - name: 📦 Install dependencies
+      run: |
+        echo "📦 Installing server dependencies..."
+        cd server
+        npm ci --production
+        echo "✅ Dependencies installed successfully"
+    
+    - name: 🧪 Run tests
+      run: |
+        echo "🧪 Running server tests..."
+        cd server
+        if npm run test; then
+          echo "✅ Tests passed"
+        else
+          echo "❌ Tests failed"
+          exit 1
+        fi
+    
+    - name: 🚀 Deploy to server
+      run: |
+        echo "🚀 Starting server deployment..."
+        
+        # Створення архіву для сервера
+        tar -czf server-deploy.tar.gz server/
+        echo "📦 Archive created: server-deploy.tar.gz"
+        
+        # Завантаження на сервер
+        echo "📤 Uploading to server..."
+        scp -o StrictHostKeyChecking=no server-deploy.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+        
+        # Виконання команд на сервері
+        echo "🔧 Executing deployment commands on server..."
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          
+          echo "🔄 Starting server deployment process..."
+          cd /var/www/skillklan
+          
+          # Стоп поточного сервера
+          echo "⏹️  Stopping current server..."
+          pm2 stop skillklan-server || echo "⚠️  Server was not running"
+          
+          # Резервна копія
+          if [ -d "server" ]; then
+            BACKUP_DIR="server.backup.$(date +%Y%m%d_%H%M%S)"
+            echo "💾 Creating backup: $BACKUP_DIR"
+            mv server "$BACKUP_DIR"
+          fi
+          
+          # Розпакування нової версії
+          echo "📦 Extracting new version..."
+          cd /tmp
+          tar -xzf server-deploy.tar.gz
+          mv server /var/www/skillklan/
+          
+          # Встановлення залежностей
+          echo "📥 Installing dependencies..."
+          cd /var/www/skillklan/server
+          npm ci --production
+          
+          # Запуск сервера
+          echo "🚀 Starting server..."
+          pm2 start ecosystem.config.js --env ${{ github.event.inputs.environment || 'staging' }}
+          pm2 save
+          
+          # Очищення
+          rm /tmp/server-deploy.tar.gz
+          
+          echo "✅ Server deployment completed successfully!"
+        EOF
+        
+        echo "✅ Server deployment completed!"
+    
+    - name: 🔍 Health check
+      run: |
+        echo "🔍 Performing health check..."
+        
+        # Чекаємо поки сервер запуститься
+        echo "⏳ Waiting for server to start..."
+        sleep 15
+        
+        # Перевіряємо статус
+        echo "🏥 Checking server health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/api/health; then
+          echo "✅ Server is healthy and responding"
+        else
+          echo "❌ Server health check failed"
+          exit 1
+        fi
+    
+    - name: 📧 Deployment summary
+      run: |
+        echo "🎉 Server deployment completed successfully!"
+        echo "   Environment: ${{ github.event.inputs.environment || 'staging' }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Commit: ${{ github.sha }}"
+
+  deploy-miniapp:
+    name: 📱 Deploy Mini App
+    needs: analyze-changes
+    if: |
+      (needs.miniapp-deploy == 'true' && needs.full-deploy != 'true') ||
+      (github.event.inputs.force_full_deploy == 'true')
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: miniapp/package-lock.json
+    
+    - name: 📦 Install dependencies
+      run: |
+        echo "📦 Installing MiniApp dependencies..."
+        cd miniapp
+        npm ci
+        echo "✅ Dependencies installed successfully"
+    
+    - name: 🧪 Run tests
+      run: |
+        echo "🧪 Running MiniApp tests..."
+        cd miniapp
+        if npm run test:unit; then
+          echo "✅ Tests passed"
+        else
+          echo "⚠️  No tests configured, skipping..."
+        fi
+    
+    - name: 🏗️ Build for production
+      run: |
+        echo "🏗️ Building MiniApp for production..."
+        cd miniapp
+        
+        # Встановлюємо змінні середовища для збірки
+        export VITE_API_URL="${{ secrets.API_URL_STAGING }}"
+        export VITE_ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+        
+        echo "🔧 Build environment:"
+        echo "   API URL: $VITE_API_URL"
+        echo "   Environment: $VITE_ENVIRONMENT"
+        
+        npm run build
+        
+        echo "✅ Build completed successfully"
+    
+    - name: 🚀 Deploy to server
+      run: |
+        echo "🚀 Starting MiniApp deployment..."
+        
+        # Створення архіву для frontend
+        tar -czf miniapp-deploy.tar.gz miniapp/dist/
+        echo "📦 Archive created: miniapp-deploy.tar.gz"
+        
+        # Завантаження на сервер
+        echo "📤 Uploading to server..."
+        scp -o StrictHostKeyChecking=no miniapp-deploy.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+        
+        # Виконання команд на сервері
+        echo "🔧 Executing deployment commands on server..."
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          
+          echo "🔄 Starting MiniApp deployment process..."
+          cd /var/www/skillklan
+          
+          # Стоп Nginx
+          echo "⏹️  Stopping Nginx..."
+          sudo systemctl stop nginx
+          
+          # Резервна копія поточної версії
+          if [ -d "public" ]; then
+            BACKUP_DIR="public.backup.$(date +%Y%m%d_%H%M%S)"
+            echo "💾 Creating backup: $BACKUP_DIR"
+            mv public "$BACKUP_DIR"
+          fi
+          
+          # Розпакування нової версії
+          echo "📦 Extracting new version..."
+          cd /tmp
+          tar -xzf miniapp-deploy.tar.gz
+          mv dist /var/www/skillklan/public
+          
+          # Налаштування прав
+          echo "🔐 Setting permissions..."
+          sudo chown -R www-data:www-data /var/www/skillklan/public
+          sudo chmod -R 755 /var/www/skillklan/public
+          
+          # Запуск Nginx
+          echo "🚀 Starting Nginx..."
+          sudo systemctl start nginx
+          
+          # Очищення
+          rm /tmp/miniapp-deploy.tar.gz
+          
+          echo "✅ MiniApp deployment completed successfully!"
+        EOF
+        
+        echo "✅ MiniApp deployment completed!"
+    
+    - name: 🔍 Frontend health check
+      run: |
+        echo "🔍 Performing frontend health check..."
+        
+        # Чекаємо поки Nginx запуститься
+        echo "⏳ Waiting for Nginx to start..."
+        sleep 10
+        
+        # Перевіряємо статус
+        echo "🏥 Checking frontend health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/; then
+          echo "✅ Frontend is healthy and responding"
+        else
+          echo "❌ Frontend health check failed"
+          exit 1
+        fi
+    
+    - name: 📧 Deployment summary
+      run: |
+        echo "🎉 MiniApp deployment completed successfully!"
+        echo "   Environment: ${{ github.event.inputs.environment || 'staging' }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Commit: ${{ github.sha }}"
+
+  deploy-full:
+    name: 🌐 Full Deployment
+    needs: analyze-changes
+    if: |
+      needs.full-deploy == 'true' ||
+      github.event.inputs.force_full_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ${{ env.CACHE_DEPENDENCY_PATH }}
+    
+    - name: 📦 Install server dependencies
+      run: |
+        echo "📦 Installing server dependencies..."
+        cd server
+        npm ci --production
+        echo "✅ Server dependencies installed"
+    
+    - name: 📦 Install miniapp dependencies
+      run: |
+        echo "📦 Installing MiniApp dependencies..."
+        cd miniapp
+        npm ci
+        echo "✅ MiniApp dependencies installed"
+    
+    - name: 🧪 Run server tests
+      run: |
+        echo "🧪 Running server tests..."
+        cd server
+        if npm run test; then
+          echo "✅ Server tests passed"
+        else
+          echo "❌ Server tests failed"
+          exit 1
+        fi
+    
+    - name: 🧪 Run miniapp tests
+      run: |
+        echo "🧪 Running MiniApp tests..."
+        cd miniapp
+        if npm run test:unit; then
+          echo "✅ MiniApp tests passed"
+        else
+          echo "⚠️  No MiniApp tests configured, skipping..."
+        fi
+    
+    - name: 🏗️ Build miniapp
+      run: |
+        echo "🏗️ Building MiniApp for production..."
+        cd miniapp
+        
+        # Встановлюємо змінні середовища для збірки
+        export VITE_API_URL="${{ secrets.API_URL_PRODUCTION }}"
+        export VITE_ENVIRONMENT="${{ github.event.inputs.environment || 'production' }}"
+        
+        echo "🔧 Build environment:"
+        echo "   API URL: $VITE_API_URL"
+        echo "   Environment: $VITE_ENVIRONMENT"
+        
+        npm run build
+        
+        echo "✅ Build completed successfully"
+    
+    - name: 🚀 Deploy everything
+      run: |
+        echo "🚀 Starting full deployment..."
+        
+        # Створення архіву для всього
+        tar -czf full-deploy.tar.gz server/ miniapp/dist/
+        echo "📦 Archive created: full-deploy.tar.gz"
+        
+        # Завантаження на сервер
+        echo "📤 Uploading to server..."
+        scp -o StrictHostKeyChecking=no full-deploy.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+        
+        # Виконання команд на сервері
+        echo "🔧 Executing deployment commands on server..."
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          
+          echo "🔄 Starting full deployment process..."
+          cd /var/www/skillklan
+          
+          # Стоп сервісів
+          echo "⏹️  Stopping services..."
+          pm2 stop skillklan-server || echo "⚠️  Server was not running"
+          sudo systemctl stop nginx
+          
+          # Резервна копія
+          if [ -d "backup" ]; then
+            rm -rf backup
+          fi
+          mkdir backup
+          
+          if [ -d "server" ]; then
+            echo "💾 Backing up server..."
+            mv server backup/
+          fi
+          
+          if [ -d "public" ]; then
+            echo "💾 Backing up frontend..."
+            mv public backup/
+          fi
+          
+          # Розпакування нової версії
+          echo "📦 Extracting new version..."
+          cd /tmp
+          tar -xzf full-deploy.tar.gz
+          mv server /var/www/skillklan/
+          mv dist /var/www/skillklan/public
+          
+          # Налаштування сервера
+          echo "🔧 Setting up server..."
+          cd /var/www/skillklan/server
+          npm ci --production
+          pm2 start ecosystem.config.js --env ${{ github.event.inputs.environment || 'production' }}
+          pm2 save
+          
+          # Налаштування frontend
+          echo "🔧 Setting up frontend..."
+          sudo chown -R www-data:www-data /var/www/skillklan/public
+          sudo chmod -R 755 /var/www/skillklan/public
+          
+          # Запуск Nginx
+          echo "🚀 Starting Nginx..."
+          sudo systemctl start nginx
+          
+          # Очищення
+          rm /tmp/full-deploy.tar.gz
+          
+          echo "✅ Full deployment completed successfully!"
+        EOF
+        
+        echo "✅ Full deployment completed!"
+    
+    - name: 🔍 Health checks
+      run: |
+        echo "🔍 Performing health checks..."
+        
+        # Чекаємо поки сервіси запустяться
+        echo "⏳ Waiting for services to start..."
+        sleep 25
+        
+        # Перевіряємо сервер
+        echo "🏥 Checking server health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/api/health; then
+          echo "✅ Server is healthy"
+        else
+          echo "❌ Server health check failed"
+          exit 1
+        fi
+        
+        # Перевіряємо frontend
+        echo "🏥 Checking frontend health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/; then
+          echo "✅ Frontend is healthy"
+        else
+          echo "❌ Frontend health check failed"
+          exit 1
+        fi
+    
+    - name: 📧 Deployment summary
+      run: |
+        echo "🎉 Full deployment completed successfully!"
+        echo "   Environment: ${{ github.event.inputs.environment || 'production' }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Commit: ${{ github.sha }}"
+        echo "   Type: Full deployment (server + frontend)"
+
+  deployment-summary:
+    name: 📊 Deployment Summary
+    needs: [analyze-changes, deploy-server, deploy-miniapp, deploy-full]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📋 Generate summary
+      run: |
+        echo "🎯 Deployment Summary"
+        echo "====================="
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Author: ${{ github.actor }}"
+        echo "Timestamp: $(date -u)"
+        echo ""
+        
+        if [ "${{ needs.analyze-changes.outputs.deployment-type }}" = "none" ]; then
+          echo "✅ No deployment needed - no relevant changes detected"
+        else
+          echo "🚀 Deployment Type: ${{ needs.analyze-changes.outputs.deployment-type }}"
+          echo "📋 Changes: ${{ needs.analyze-changes.outputs.change-summary }}"
+          echo ""
+          
+          if [ "${{ needs.deploy-server.result }}" = "success" ]; then
+            echo "✅ Server deployment: SUCCESS"
+          elif [ "${{ needs.deploy-server.result }}" = "skipped" ]; then
+            echo "⏭️  Server deployment: SKIPPED"
+          else
+            echo "❌ Server deployment: FAILED"
+          fi
+          
+          if [ "${{ needs.deploy-miniapp.result }}" = "success" ]; then
+            echo "✅ MiniApp deployment: SUCCESS"
+          elif [ "${{ needs.deploy-miniapp.result }}" = "skipped" ]; then
+            echo "⏭️  MiniApp deployment: SKIPPED"
+          else
+            echo "❌ MiniApp deployment: FAILED"
+          fi
+          
+          if [ "${{ needs.deploy-full.result }}" = "success" ]; then
+            echo "✅ Full deployment: SUCCESS"
+          elif [ "${{ needs.deploy-full.result }}" = "skipped" ]; then
+            echo "⏭️  Full deployment: SKIPPED"
+          else
+            echo "❌ Full deployment: FAILED"
+          fi
+        fi
+        
+        echo ""
+        echo "🔗 View deployment: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

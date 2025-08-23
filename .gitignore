@@ -1,0 +1,240 @@
+# ========================================
+# ROOT PROJECT GITIGNORE
+# ========================================
+
+# ========================================
+# ENVIRONMENT & SECURITY
+# ========================================
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+config.env
+*.env
+
+# Secrets and tokens
+*.token
+bot-config.json
+telegram-keys.json
+SECRETS.md
+
+# ========================================
+# DEPENDENCIES
+# ========================================
+# Node modules (all directories)
+node_modules/
+**/node_modules/
+
+# Package locks (keep these in git)
+# package-lock.json
+# yarn.lock
+
+# ========================================
+# BUILD OUTPUTS
+# ========================================
+# Build directories
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+.next/
+**/.next/
+.nuxt/
+**/.nuxt/
+dist-ssr/
+**/dist-ssr/
+
+# ========================================
+# CACHE & TEMPORARY FILES
+# ========================================
+# Cache directories
+.cache/
+**/.cache/
+.parcel-cache/
+**/.parcel-cache/
+.vite/
+**/.vite/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+**/.tmp/
+temp/
+**/temp/
+tmp/
+**/tmp/
+
+# ========================================
+# LOGS & DEBUG
+# ========================================
+# Log files
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+**/pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ========================================
+# OPERATING SYSTEM
+# ========================================
+# macOS
+.DS_Store
+**/.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Linux
+*~
+
+# ========================================
+# EDITORS & IDEs
+# ========================================
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# IntelliJ
+.idea/
+**/.idea/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Cursor
+.cursor/
+**/.cursor/
+
+# ========================================
+# COVERAGE & TESTING
+# ========================================
+# Coverage reports
+coverage/
+**/coverage/
+*.lcov
+
+# Test outputs
+test-results/
+**/test-results/
+
+# ========================================
+# PACKAGE MANAGERS
+# ========================================
+# npm
+.npm/
+**/.npm/
+.npmrc
+
+# Yarn
+.yarn/
+**/.yarn/
+.yarnrc
+.yarn-integrity
+
+# pnpm
+.pnpm-store/
+**/.pnpm-store/
+
+# ========================================
+# DEPLOYMENT & SERVER
+# ========================================
+# PM2 ecosystem
+ecosystem.config.js
+
+# Server configs
+nginx.conf
+deploy.sh
+setup-database.sh
+
+# Database files
+*.sql
+database.sql
+
+# ========================================
+# FRAMEWORK SPECIFIC
+# ========================================
+# Vue.js
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+
+# React
+.cache/
+.parcel-cache/
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+dist/
+
+# ========================================
+# MISC
+# ========================================
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Local files
+*.local
+
+# ========================================
+# VUE.JS SPECIFIC
+# ========================================
+# Vue build outputs
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+
+# ========================================
+# KEEP IN GIT (IMPORTANT FILES)
+# ========================================
+!src/
+!public/
+!package.json
+!package-lock.json
+!yarn.lock
+!pnpm-lock.yaml
+!tsconfig.json
+!vite.config.ts
+!index.html
+!README.md

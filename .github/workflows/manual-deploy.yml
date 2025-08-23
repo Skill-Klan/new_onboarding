@@ -1,0 +1,449 @@
+name: 🎛️ Manual Deploy & Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+        - deploy
+        - rollback
+        - health-check
+        - server-status
+      environment:
+        description: 'Environment to work with'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      target_commit:
+        description: 'Commit hash to deploy/rollback to (optional)'
+        required: false
+        type: string
+      force:
+        description: 'Force action even if checks fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  manual-deploy:
+    name: 🚀 Manual Deploy
+    if: github.event.inputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        ref: ${{ github.event.inputs.target_commit || 'main' }}
+    
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          miniapp/package-lock.json
+    
+    - name: 📦 Install dependencies
+      run: |
+        echo "📦 Installing dependencies..."
+        
+        echo "🔧 Installing server dependencies..."
+        cd server
+        npm ci --production
+        
+        echo "🔧 Installing MiniApp dependencies..."
+        cd ../miniapp
+        npm ci
+    
+    - name: 🏗️ Build miniapp
+      run: |
+        echo "🏗️ Building MiniApp..."
+        cd miniapp
+        
+        # Встановлюємо змінні середовища для збірки
+        if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+          export VITE_API_URL="${{ secrets.API_URL_PRODUCTION }}"
+        else
+          export VITE_API_URL="${{ secrets.API_URL_STAGING }}"
+        fi
+        export VITE_ENVIRONMENT="${{ github.event.inputs.environment }}"
+        
+        echo "🔧 Build environment:"
+        echo "   API URL: $VITE_API_URL"
+        echo "   Environment: $VITE_ENVIRONMENT"
+        echo "   Target Commit: ${{ github.event.inputs.target_commit || 'main' }}"
+        
+        npm run build
+        
+        echo "✅ Build completed successfully"
+    
+    - name: 🚀 Deploy to server
+      run: |
+        echo "🚀 Starting manual deployment..."
+        
+        # Створення архіву для всього
+        tar -czf manual-deploy.tar.gz server/ miniapp/dist/
+        echo "📦 Archive created: manual-deploy.tar.gz"
+        
+        # Завантаження на сервер
+        echo "📤 Uploading to server..."
+        scp -o StrictHostKeyChecking=no manual-deploy.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+        
+        # Виконання команд на сервері
+        echo "🔧 Executing deployment commands on server..."
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          
+          echo "🔄 Starting manual deployment process..."
+          cd /var/www/skillklan
+          
+          # Стоп сервісів
+          echo "⏹️  Stopping services..."
+          pm2 stop skillklan-server || echo "⚠️  Server was not running"
+          sudo systemctl stop nginx
+          
+          # Резервна копія
+          if [ -d "backup" ]; then
+            rm -rf backup
+          fi
+          mkdir backup
+          
+          if [ -d "server" ]; then
+            echo "💾 Backing up server..."
+            mv server backup/
+          fi
+          
+          if [ -d "public" ]; then
+            echo "💾 Backing up frontend..."
+            mv public backup/
+          fi
+          
+          # Розпакування нової версії
+          echo "📦 Extracting new version..."
+          cd /tmp
+          tar -xzf manual-deploy.tar.gz
+          mv server /var/www/skillklan/
+          mv dist /var/www/skillklan/public
+          
+          # Налаштування сервера
+          echo "🔧 Setting up server..."
+          cd /var/www/skillklan/server
+          npm ci --production
+          pm2 start ecosystem.config.js --env ${{ github.event.inputs.environment }}
+          pm2 save
+          
+          # Налаштування frontend
+          echo "🔧 Setting up frontend..."
+          sudo chown -R www-data:www-data /var/www/skillklan/public
+          sudo chmod -R 755 /var/www/skillklan/public
+          
+          # Запуск Nginx
+          echo "🚀 Starting Nginx..."
+          sudo systemctl start nginx
+          
+          # Очищення
+          rm /tmp/manual-deploy.tar.gz
+          
+          echo "✅ Manual deployment completed successfully!"
+        EOF
+        
+        echo "✅ Manual deployment completed!"
+    
+    - name: 🔍 Health checks
+      run: |
+        echo "🔍 Performing health checks..."
+        
+        # Чекаємо поки сервіси запустяться
+        echo "⏳ Waiting for services to start..."
+        sleep 25
+        
+        # Перевіряємо сервер
+        echo "🏥 Checking server health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/api/health; then
+          echo "✅ Server is healthy"
+        else
+          echo "❌ Server health check failed"
+          if [ "${{ github.event.inputs.force }}" = "false" ]; then
+            exit 1
+          fi
+        fi
+        
+        # Перевіряємо frontend
+        echo "🏥 Checking frontend health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/; then
+          echo "✅ Frontend is healthy"
+        else
+          echo "❌ Frontend health check failed"
+          if [ "${{ github.event.inputs.force }}" = "false" ]; then
+            exit 1
+          fi
+        fi
+    
+    - name: 📧 Deployment summary
+      run: |
+        echo "🎉 Manual deployment completed successfully!"
+        echo "   Environment: ${{ github.event.inputs.environment }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Target Commit: ${{ github.event.inputs.target_commit || 'main' }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Type: Manual deployment"
+
+  rollback:
+    name: 🔄 Rollback
+    if: github.event.inputs.action == 'rollback'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: 🚀 Rollback on server
+      run: |
+        echo "🔄 Starting rollback process..."
+        
+        # Виконання команд на сервері
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          set -e
+          
+          echo "🔄 Starting rollback process..."
+          cd /var/www/skillklan
+          
+          # Перевіряємо наявність резервних копій
+          if [ ! -d "backup" ]; then
+            echo "❌ No backup directory found"
+            exit 1
+          fi
+          
+          echo "📋 Available backups:"
+          ls -la backup/
+          
+          # Стоп сервісів
+          echo "⏹️  Stopping services..."
+          pm2 stop skillklan-server || echo "⚠️  Server was not running"
+          sudo systemctl stop nginx
+          
+          # Визначаємо що відкатувати
+          if [ -d "backup/server" ]; then
+            echo "🔄 Rolling back server..."
+            if [ -d "server" ]; then
+              rm -rf server
+            fi
+            mv backup/server ./
+          fi
+          
+          if [ -d "backup/public" ]; then
+            echo "🔄 Rolling back frontend..."
+            if [ -d "public" ]; then
+              rm -rf public
+            fi
+            mv backup/public ./
+          fi
+          
+          # Запуск сервісів
+          if [ -d "server" ]; then
+            echo "🚀 Starting server..."
+            cd server
+            pm2 start ecosystem.config.js --env ${{ github.event.inputs.environment }}
+            pm2 save
+            cd ..
+          fi
+          
+          if [ -d "public" ]; then
+            echo "🚀 Starting Nginx..."
+            sudo systemctl start nginx
+          fi
+          
+          # Очищення
+          rm -rf backup
+          
+          echo "✅ Rollback completed successfully!"
+        EOF
+        
+        echo "✅ Rollback completed!"
+    
+    - name: 🔍 Health checks after rollback
+      run: |
+        echo "🔍 Performing health checks after rollback..."
+        
+        # Чекаємо поки сервіси запустяться
+        echo "⏳ Waiting for services to start..."
+        sleep 20
+        
+        # Перевіряємо сервер
+        echo "🏥 Checking server health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/api/health; then
+          echo "✅ Server is healthy after rollback"
+        else
+          echo "❌ Server health check failed after rollback"
+          exit 1
+        fi
+        
+        # Перевіряємо frontend
+        echo "🏥 Checking frontend health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/; then
+          echo "✅ Frontend is healthy after rollback"
+        else
+          echo "❌ Frontend health check failed after rollback"
+          exit 1
+        fi
+    
+    - name: 📧 Rollback summary
+      run: |
+        echo "🔄 Rollback completed successfully!"
+        echo "   Environment: ${{ github.event.inputs.environment }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Type: Rollback to previous version"
+
+  health-check:
+    name: 🔍 Health Check
+    if: github.event.inputs.action == 'health-check'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: 🔍 Check server health
+      run: |
+        echo "🔍 Performing comprehensive health check..."
+        
+        echo "🏥 Checking server health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/api/health; then
+          echo "✅ Server is healthy"
+        else
+          echo "❌ Server health check failed"
+          exit 1
+        fi
+        
+        echo "🏥 Checking frontend health..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/; then
+          echo "✅ Frontend is healthy"
+        else
+          echo "❌ Frontend health check failed"
+          exit 1
+        fi
+        
+        echo "🏥 Checking Nginx status..."
+        if curl -f http://${{ secrets.SERVER_HOST }}/health; then
+          echo "✅ Nginx is healthy"
+        else
+          echo "❌ Nginx health check failed"
+          exit 1
+        fi
+        
+        echo "🎉 All health checks passed!"
+    
+    - name: 📧 Health check summary
+      run: |
+        echo "🔍 Health check completed successfully!"
+        echo "   Environment: ${{ github.event.inputs.environment }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Status: HEALTHY"
+
+  server-status:
+    name: 📊 Server Status
+    if: github.event.inputs.action == 'server-status'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: 📊 Get server status
+      run: |
+        echo "📊 Getting server status..."
+        
+        # Отримуємо статус сервера
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          echo "🖥️  Server Status Report"
+          echo "========================"
+          echo "Timestamp: $(date)"
+          echo "Uptime: $(uptime)"
+          echo ""
+          
+          echo "💾 Disk Usage:"
+          df -h
+          echo ""
+          
+          echo "🧠 Memory Usage:"
+          free -h
+          echo ""
+          
+          echo "🔥 PM2 Status:"
+          pm2 list
+          echo ""
+          
+          echo "🌐 Nginx Status:"
+          sudo systemctl status nginx --no-pager -l
+          echo ""
+          
+          echo "🗄️  PostgreSQL Status:"
+          sudo systemctl status postgresql --no-pager -l
+          echo ""
+          
+          echo "📁 Application Directory:"
+          ls -la /var/www/skillklan/
+          echo ""
+          
+          echo "📊 Recent Logs (last 10 lines):"
+          echo "Server logs:"
+          tail -10 /var/www/skillklan/server/logs/server.log 2>/dev/null || echo "No server logs found"
+          echo ""
+          echo "Nginx logs:"
+          sudo tail -10 /var/log/nginx/skillklan_access.log 2>/dev/null || echo "No Nginx logs found"
+        EOF
+    
+    - name: 📧 Status summary
+      run: |
+        echo "📊 Server status check completed!"
+        echo "   Environment: ${{ github.event.inputs.environment }}"
+        echo "   Server: ${{ secrets.SERVER_HOST }}"
+        echo "   Timestamp: $(date -u)"
+        echo "   Type: Status report"
+
+  action-summary:
+    name: 📋 Action Summary
+    needs: [manual-deploy, rollback, health-check, server-status]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📋 Generate action summary
+      run: |
+        echo "🎛️  Manual Action Summary"
+        echo "========================="
+        echo "Repository: ${{ github.repository }}"
+        echo "Action: ${{ github.event.inputs.action }}"
+        echo "Environment: ${{ github.event.inputs.environment }}"
+        echo "Target Commit: ${{ github.event.inputs.target_commit || 'N/A' }}"
+        echo "Force: ${{ github.event.inputs.force }}"
+        echo "Timestamp: $(date -u)"
+        echo ""
+        
+        echo "📊 Action Results:"
+        if [ "${{ github.event.inputs.action }}" = "deploy" ]; then
+          echo "   Manual Deploy: ${{ needs.manual-deploy.result }}"
+        elif [ "${{ github.event.inputs.action }}" = "rollback" ]; then
+          echo "   Rollback: ${{ needs.rollback.result }}"
+        elif [ "${{ github.event.inputs.action }}" = "health-check" ]; then
+          echo "   Health Check: ${{ needs.health-check.result }}"
+        elif [ "${{ github.event.inputs.action }}" = "server-status" ]; then
+          echo "   Server Status: ${{ needs.server-status.result }}"
+        fi
+        
+        echo ""
+        echo "🔗 View details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
