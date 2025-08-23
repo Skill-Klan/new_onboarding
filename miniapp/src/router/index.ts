@@ -5,6 +5,7 @@ import QaPage from '../pages/QaPage.vue'
 import BaPage from '../pages/BaPage.vue'
 import BePage from '../pages/BePage.vue'
 import AboutPage from '../pages/AboutPage.vue'
+import StudyPage from '../pages/StudyPage.vue'
 
 const routes = [
   {
@@ -40,6 +41,11 @@ const routes = [
     path: '/about',
     name: 'About',
     component: AboutPage
+  },
+  {
+    path: '/study/:profession',
+    name: 'Study',
+    component: StudyPage
   }
 ]
 

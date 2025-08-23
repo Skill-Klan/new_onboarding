@@ -65,12 +65,18 @@
     <InfoSection title="Висновок">
       <p>{{ professionData.conclusion }}</p>
     </InfoSection>
+
+    <!-- Кнопка навчання -->
+    <div class="study-section">
+      <StudyButton />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import InfoSection from './InfoSection.vue'
 import { ref, onMounted } from 'vue'
+import StudyButton from './StudyButton.vue'
 
 interface ProfessionData {
   name: string
@@ -144,6 +150,15 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
+}
+
+.study-section {
+  margin-top: 40px;
+  text-align: center;
+  padding: 20px;
+  background: rgba(75, 85, 99, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 /* Стилі для списків */
