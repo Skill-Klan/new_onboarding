@@ -121,6 +121,14 @@
         </div> -->
       </div>
     </InfoSection>
+
+    <!-- Кнопка переходу на FAQ -->
+    <div class="faq-section">
+        <button class="faq-button" @click="navigateToFAQ">
+          <span class="button-icon">❓ </span>
+          <span class="button-text">  Часто запитують</span>
+        </button>
+      </div>
     </BasePage>
   </template>
   
@@ -141,6 +149,10 @@ const navigateToBA = () => {
 
 const navigateToBE = () => {
   router.push('/be')
+}
+
+const navigateToFAQ = () => {
+  router.push('/faq')
 }
 </script>
   

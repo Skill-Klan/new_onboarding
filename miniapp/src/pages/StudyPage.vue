@@ -66,6 +66,11 @@
             </li>
           </ol>
         </InfoSection>
+
+        <!-- Кнопка тестового завдання (тільки для QA та BA) -->
+      <div v-if="showTestTaskButton" class="test-task-section">
+        <TestTaskButton />
+      </div>
   
         <!-- Контакти для запитів -->
         <InfoSection title="Контакти для запитів">
@@ -87,11 +92,17 @@
   <script setup lang="ts">
   import BasePage from '../components/BasePage.vue'
   import InfoSection from '../components/InfoSection.vue'
-  import { ref, onMounted } from 'vue'
+  import TestTaskButton from '../components/TestTaskButton.vue'
+  import { ref,computed, onMounted } from 'vue'
   import { useRoute } from 'vue-router'
   
   const route = useRoute()
   const profession = route.params.profession as string
+
+  // Показуємо кнопку "Отримати тестове завдання" тільки для QA та BA
+const showTestTaskButton = computed(() => {
+  return ['qa', 'ba'].includes(profession)
+})
   
   interface StudyData {
     title: string
@@ -199,6 +210,11 @@
     color: #e5e7eb;
     font-weight: 500;
   }
+
+  .test-task-section {
+  margin: 30px 0;
+  text-align: center;
+}
   
   /* Адаптивність */
   @media (max-width: 768px) {

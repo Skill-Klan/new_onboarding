@@ -1,5 +1,10 @@
 <template>
   <div class="faq-container">
+    <!-- Кнопка назад (умовно) -->
+    <div v-if="canGoBack" class="back-section">
+      <BackArrow />
+    </div>
+    
     <h1 class="faq-title">Часті питання</h1>
     
     <div class="faq-list">
@@ -50,7 +55,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import BackArrow from '../components/BackArrow.vue'
+import { ref, onMounted, computed } from 'vue'
 
 interface FAQQuestion {
   q: string
@@ -62,65 +68,55 @@ interface FAQCategory {
   questions: FAQQuestion[]
 }
 
-interface FAQData {
-  faq: FAQCategory[]
-}
-
 const faqData = ref<FAQCategory[]>([])
 const openItems = ref<Set<string>>(new Set())
 const openCategories = ref<Set<number>>(new Set())
+
+// Перевіряємо, чи можна показати кнопку назад
+const canGoBack = computed(() => {
+  // Перевіряємо, чи є попередня сторінка в історії
+  const hasHistory = window.history.length > 1
+  
+  // Перевіряємо, чи прийшли з нашої системи
+  const referrer = document.referrer
+  const currentHost = window.location.host
+  const isInternalNavigation = referrer && referrer.includes(currentHost)
+  
+  // Показуємо кнопку тільки якщо є історія І прийшли з нашої системи
+  return hasHistory && isInternalNavigation
+})
 
 // Завантажити дані з JSON
 const loadFAQData = async () => {
   try {
     const response = await fetch('/src/data/faq.json')
-    const data: FAQData = await response.json()
+    const data = await response.json()
     faqData.value = data.faq
-    // За замовчуванням відкрити всі категорії
-    data.faq.forEach((_, index) => {
-      openCategories.value.add(index)
-    })
   } catch (error) {
-    console.error('Помилка завантаження FAQ:', error)
-    faqData.value = [
-      {
-        category: "Помилка завантаження",
-        questions: [
-          {
-            q: "Не вдалося завантажити FAQ",
-            a: "Перевірте підключення до інтернету та спробуйте ще раз."
-          }
-        ]
-      }
-    ]
-    openCategories.value.add(0)
+    console.error('Помилка завантаження FAQ даних:', error)
   }
 }
 
-// Перевірити чи категорія відкрита
+// Перевірити, чи категорія відкрита
 const isCategoryOpen = (categoryIndex: number): boolean => {
   return openCategories.value.has(categoryIndex)
 }
 
-// Перевірити чи елемент відкритий
+// Перевірити, чи питання відкрите
 const isItemOpen = (categoryIndex: number, questionIndex: number): boolean => {
   return openItems.value.has(`${categoryIndex}-${questionIndex}`)
 }
 
-// Переключити стан категорії
+// Переключити категорію
 const toggleCategory = (categoryIndex: number) => {
   if (openCategories.value.has(categoryIndex)) {
     openCategories.value.delete(categoryIndex)
-    // Закрити всі питання в цій категорії
-    faqData.value[categoryIndex].questions.forEach((_, questionIndex) => {
-      openItems.value.delete(`${categoryIndex}-${questionIndex}`)
-    })
   } else {
     openCategories.value.add(categoryIndex)
   }
 }
 
-// Переключити стан елемента
+// Переключити питання
 const toggleItem = (categoryIndex: number, questionIndex: number) => {
   const key = `${categoryIndex}-${questionIndex}`
   if (openItems.value.has(key)) {
@@ -130,7 +126,6 @@ const toggleItem = (categoryIndex: number, questionIndex: number) => {
   }
 }
 
-// Завантажити дані при монтуванні компонента
 onMounted(() => {
   loadFAQData()
 })
@@ -138,170 +133,150 @@ onMounted(() => {
 
 <style scoped>
 .faq-container {
-  padding: 20px 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  padding: 20px;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
+  margin: 0;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+}
+
+.back-section {
+  margin-bottom: 20px;
 }
 
 .faq-title {
+  font-size: clamp(28px, 7vw, 36px);
+  font-weight: 700;
   text-align: center;
-  margin-bottom: 30px;
-  font-size: clamp(18px, 4vw, 24px);
-  font-weight: bold;
-  color: #ffffff;
-  width: 100%;
-  max-width: calc(100% - 100px);
-  padding: 0 50px;
-  box-sizing: border-box;
+  margin: 20px 0 40px 0;
+  background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .faq-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  max-width: calc(100% - 100px);
-  padding: 0 50px;
-  box-sizing: border-box;
+  gap: 20px;
 }
 
 .faq-category {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  background: rgba(75, 85, 99, 0.3);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  overflow: hidden;
 }
 
 .category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px;
   cursor: pointer;
-  padding: 15px 20px;
-  background-color: #374151;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
+  background: rgba(75, 85, 99, 0.5);
 }
 
 .category-header:hover {
-  background-color: #4b5563;
+  background: rgba(75, 85, 99, 0.7);
 }
 
 .category-title {
-  font-size: clamp(16px, 3.5vw, 18px);
+  font-size: clamp(18px, 4.5vw, 22px);
   font-weight: 600;
   color: #ffffff;
   margin: 0;
 }
 
 .category-icon {
-  font-size: clamp(18px, 4vw, 20px);
+  font-size: 24px;
   font-weight: bold;
-  color: #ffffff;
-  flex-shrink: 0;
+  color: #8b5cf6;
 }
 
 .category-questions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-left: 10px;
+  padding: 0 20px 20px 20px;
+}
+
+.category-questions .faq-item:first-child {
+  margin-top: 20px;
 }
 
 .faq-item {
-  border: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+  background: rgba(75, 85, 99, 0.2);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-  max-width: 100%;
+  transition: all 0.2s ease;
+}
+
+.faq-item:hover {
+  background: rgba(75, 85, 99, 0.4);
 }
 
 .faq-question {
-  padding: clamp(12px, 3vw, 16px);
-  background-color: #f9fafb;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16px;
   font-weight: 500;
-  color: #1f2937;
+  color: #e5e7eb;
   font-size: clamp(14px, 3.5vw, 16px);
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .faq-icon {
-  font-size: clamp(16px, 4vw, 20px);
+  font-size: 18px;
   font-weight: bold;
-  color: #6b7280;
+  color: #8b5cf6;
   flex-shrink: 0;
 }
 
 .faq-answer {
-  padding: clamp(12px, 3vw, 16px);
-  background-color: #ffffff;
-  border-top: 1px solid #e5e7eb;
+  padding: 0 16px 16px 16px;
+  color: #d1d5db;
   line-height: 1.6;
-  color: #374151;
-  font-size: clamp(13px, 3vw, 14px);
-  width: 100%;
-  box-sizing: border-box;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+  font-size: clamp(14px, 3.5vw, 16px);
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+  margin-top: 8px;
+  padding-top: 16px;
 }
 
-/* Адаптивні відступи */
-@media (max-width: 1200px) {
-  .faq-title,
-  .faq-list {
-    max-width: calc(100% - 80px);
-    padding: 0 40px;
-  }
-}
-
+/* Адаптивність */
 @media (max-width: 768px) {
-  .faq-title,
-  .faq-list {
-    max-width: calc(100% - 60px);
-    padding: 0 30px;
+  .faq-container {
+    padding: 15px;
   }
 }
 
 @media (max-width: 480px) {
-  .faq-title,
-  .faq-list {
-    max-width: calc(100% - 40px);
-    padding: 0 20px;
+  .faq-container {
+    padding: 10px;
   }
   
-  .faq-list {
-    gap: 20px;
+  .category-header {
+    padding: 16px;
   }
   
   .category-questions {
-    padding-left: 5px;
+    padding: 0 16px 16px 16px;
   }
-}
 
-@media (max-width: 320px) {
-  .faq-title,
-  .faq-list {
-    max-width: calc(100% - 30px);
-    padding: 0 15px;
+  .category-questions .faq-item:first-child {
+  margin-top: 16px;
+}
+  
+  .faq-question {
+    padding: 14px;
   }
   
-  .faq-list {
-    gap: 16px;
-  }
-  
-  .category-questions {
-    padding-left: 0;
+  .faq-answer {
+    padding: 0 14px 14px 14px;
   }
 }
 </style>
