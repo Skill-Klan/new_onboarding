@@ -133,6 +133,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Стилі винесені в спільні файли */
+/* Використовуємо класи з layout.css та variables.css */
+
+/* Специфічні стилі для ProfessionPage */
 .profession-content {
   width: 100%;
 }
@@ -140,68 +144,68 @@ onMounted(() => {
 .skills-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin: 20px 0;
+  gap: var(--spacing-xl);
+  margin: var(--spacing-xl) 0;
 }
 
 .skills-group h4,
 .tools-group h4 {
-  color: #8b5cf6;
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-md);
 }
 
 .study-section {
   margin-top: 40px;
   text-align: center;
-  padding: 20px;
-  background: rgba(75, 85, 99, 0.2);
-  border-radius: 12px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  padding: var(--spacing-xl);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-secondary);
 }
 
 /* Стилі для списків */
 :deep(ul) {
-  margin: 16px 0;
-  padding-left: 20px;
+  margin: var(--spacing-lg) 0;
+  padding-left: var(--spacing-xl);
 }
 
 :deep(li) {
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
   color: #d1d5db;
   line-height: 1.5;
 }
 
 :deep(ol) {
-  margin: 16px 0;
-  padding-left: 20px;
+  margin: var(--spacing-lg) 0;
+  padding-left: var(--spacing-xl);
 }
 
 :deep(ol li) {
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
   color: #d1d5db;
   line-height: 1.5;
 }
 
 :deep(p) {
-  color: #e5e7eb;
+  color: var(--color-text-secondary);
   line-height: 1.6;
-  margin: 16px 0;
+  margin: var(--spacing-lg) 0;
 }
 
 /* Адаптивні стилі для маленьких екранів */
 @media (max-width: 768px) {
   .skills-section {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: var(--spacing-lg);
   }
 }
 
 @media (max-width: 480px) {
   :deep(ul),
   :deep(ol) {
-    padding-left: 16px;
+    padding-left: var(--spacing-lg);
   }
   
   :deep(li) {
@@ -212,7 +216,7 @@ onMounted(() => {
 @media (max-width: 320px) {
   :deep(ul),
   :deep(ol) {
-    padding-left: 12px;
+    padding-left: var(--spacing-md);
   }
   
   :deep(li) {

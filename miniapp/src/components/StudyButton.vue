@@ -1,7 +1,7 @@
 <template>
-    <button class="study-button" @click="navigateToStudy">
-      <span class="button-icon">🎓</span>
-      <span class="button-text">Як попасти на навчання</span>
+    <button class="btn btn-primary study-button" @click="navigateToStudy">
+      <span class="btn-icon">🎓</span>
+      <span class="btn-text">Як попасти на навчання</span>
     </button>
   </template>
   
@@ -19,69 +19,8 @@
   </script>
   
   <style scoped>
-  .study-button {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
-    width: 100%;
-    max-width: 400px;
-    margin: 20px auto;
-    justify-content: center;
-  }
-  
-  .study-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  }
-  
-  .study-button:active {
-    transform: translateY(0);
-  }
-  
-  .button-icon {
-    font-size: 20px;
-  }
-  
-  .button-text {
-    font-size: 16px;
-    font-weight: 600;
-  }
-  
-  /* Адаптивність */
-  @media (max-width: 768px) {
-    .study-button {
-      padding: 14px 20px;
-      font-size: 15px;
-    }
-    
-    .button-text {
-      font-size: 15px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .study-button {
-      padding: 12px 16px;
-      font-size: 14px;
-    }
-    
-    .button-text {
-      font-size: 14px;
-    }
-    
-    .button-icon {
-      font-size: 18px;
-    }
-  }
-  </style>
+/* Стилі винесені в src/styles/buttons.css */
+/* Використовуємо спільні класи з buttons.css та variables.css */
+
+/* Специфічні стилі для StudyButton (якщо потрібно) */
+</style>

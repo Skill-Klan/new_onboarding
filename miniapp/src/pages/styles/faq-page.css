@@ -1,0 +1,129 @@
+/* Стилі для сторінки FAQ */
+
+/* Контейнер FAQ */
+.faq-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Категорія FAQ */
+.faq-category {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.faq-category-title {
+  font-size: clamp(18px, 4.5vw, 22px);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-primary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.faq-category-title:hover {
+  background: rgba(75, 85, 99, 0.4);
+  border-color: var(--color-border-secondary);
+}
+
+.faq-category-title.expanded {
+  background: rgba(75, 85, 99, 0.5);
+  border-color: var(--color-primary);
+}
+
+/* Іконка розгортання */
+.faq-category-icon {
+  font-size: var(--font-size-lg);
+  transition: var(--transition-fast);
+  color: var(--color-primary);
+}
+
+.faq-category-title.expanded .faq-category-icon {
+  transform: rotate(180deg);
+}
+
+/* Питання */
+.faq-question {
+  font-size: clamp(14px, 3.5vw, 16px);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-primary);
+  transition: var(--transition-fast);
+  position: relative;
+}
+
+.faq-question:hover {
+  background: rgba(75, 85, 99, 0.4);
+  border-color: var(--color-border-secondary);
+}
+
+.faq-question.expanded {
+  background: rgba(75, 85, 99, 0.5);
+  border-color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Відповідь */
+.faq-answer {
+  font-size: clamp(14px, 3.5vw, 16px);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(75, 85, 99, 0.2);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-md);
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Перше питання в категорії */
+.faq-category .faq-question:first-child {
+  margin-top: var(--spacing-lg);
+}
+
+/* Адаптивність */
+@media (max-width: 768px) {
+  .faq-category-title {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: clamp(16px, 4vw, 20px);
+  }
+  
+  .faq-question {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: clamp(14px, 3.5vw, 16px);
+  }
+  
+  .faq-answer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: clamp(14px, 3.5vw, 16px);
+  }
+}
+
+@media (max-width: 480px) {
+  .faq-category-title {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: clamp(15px, 3.8vw, 18px);
+  }
+  
+  .faq-question {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: clamp(13px, 3.2vw, 15px);
+  }
+  
+  .faq-answer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: clamp(13px, 3.2vw, 15px);
+  }
+}

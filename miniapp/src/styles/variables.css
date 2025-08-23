@@ -1,0 +1,86 @@
+:root {
+  /* Основні кольори */
+  --color-primary: #8b5cf6;
+  --color-primary-dark: #7c3aed;
+  --color-primary-darker: #6d28d9;
+  --color-primary-light: #a78bfa;
+  
+  /* Фонові кольори */
+  --color-bg-primary: #1f2937;
+  --color-bg-secondary: #111827;
+  --color-bg-tertiary: rgba(75, 85, 99, 0.8);
+  --color-bg-card: rgba(75, 85, 99, 0.3);
+  
+  /* Текстові кольори */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e5e7eb;
+  --color-text-muted: #9ca3af;
+  --color-text-accent: #8b5cf6;
+  
+  /* Кольори станів */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Кольори рамок */
+  --color-border-primary: #374151;
+  --color-border-secondary: rgba(139, 92, 246, 0.3);
+  --color-border-accent: #8b5cf6;
+  
+  /* Градієнти */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  --gradient-primary-hover: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-darker) 100%);
+  --gradient-bg: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+  --gradient-text: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+  
+  /* Тіні */
+  --shadow-primary: 0 4px 15px rgba(139, 92, 246, 0.3);
+  --shadow-primary-hover: 0 6px 20px rgba(139, 92, 246, 0.4);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  /* Переходи */
+  --transition-fast: all 0.2s ease;
+  --transition-normal: all 0.3s ease;
+  --transition-slow: all 0.5s ease;
+  
+  /* Радіуси */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 25px;
+  --radius-full: 50%;
+  
+  /* Відступи */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  
+  /* Розміри шрифтів */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+  
+  /* Товщина шрифтів */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Z-індекси */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}

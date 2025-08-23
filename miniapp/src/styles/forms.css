@@ -1,0 +1,101 @@
+/* Контейнер форми */
+.form-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Група полів */
+.form-group {
+  margin-bottom: var(--spacing-xl);
+}
+
+/* Лейбли */
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-md);
+}
+
+/* Інпути */
+.form-input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(55, 65, 81, 0.6);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  transition: var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(75, 85, 99, 0.8);
+}
+
+.form-input.error {
+  border-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Повідомлення */
+.form-message {
+  display: block;
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.form-message.hint {
+  color: var(--color-primary);
+  font-style: italic;
+}
+
+.form-message.error {
+  color: var(--color-error);
+}
+
+.form-message.success {
+  color: var(--color-success);
+}
+
+/* Кнопка відправки */
+.form-submit {
+  composes: btn btn-primary;
+  margin-top: var(--spacing-sm);
+}
+
+/* Адаптивність */
+@media (max-width: 768px) {
+  .form-input {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-md);
+  }
+  
+  .form-label {
+    font-size: var(--font-size-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .form-input {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+  }
+  
+  .form-label {
+    font-size: var(--font-size-sm);
+  }
+  
+  .form-message {
+    font-size: var(--font-size-xs);
+  }
+}

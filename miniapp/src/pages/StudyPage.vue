@@ -150,82 +150,86 @@ const showTestTaskButton = computed(() => {
   </script>
   
   <style scoped>
-  .study-content {
-    width: 100%;
-  }
-  
-  .format-details {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin: 20px 0;
-  }
-  
-  .format-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: rgba(75, 85, 99, 0.3);
-    border-radius: 8px;
-    border: 1px solid rgba(139, 92, 246, 0.2);
-  }
-  
-  .format-icon {
-    font-size: 20px;
-  }
-  
-  .format-label {
-    font-weight: 600;
-    color: #8b5cf6;
-    min-width: 80px;
-  }
-  
-  .format-value {
-    color: #e5e7eb;
-    font-weight: 500;
-  }
-  
-  .contact-details {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 20px 0;
-  }
-  
-  .contact-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: rgba(75, 85, 99, 0.3);
-    border-radius: 8px;
-  }
-  
-  .contact-icon {
-    font-size: 20px;
-  }
-  
-  .contact-text {
-    color: #e5e7eb;
-    font-weight: 500;
-  }
+/* Стилі винесені в спільні файли */
+/* Використовуємо класи з layout.css та variables.css */
 
-  .test-task-section {
+/* Специфічні стилі для сторінки навчання */
+.study-content {
+  width: 100%;
+}
+
+.format-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-xl) 0;
+}
+
+.format-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-secondary);
+}
+
+.format-icon {
+  font-size: var(--font-size-xl);
+}
+
+.format-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  min-width: 80px;
+}
+
+.format-value {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin: var(--spacing-xl) 0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-sm);
+}
+
+.contact-icon {
+  font-size: var(--font-size-xl);
+}
+
+.contact-text {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.test-task-section {
   margin: 30px 0;
   text-align: center;
 }
-  
-  /* Адаптивність */
-  @media (max-width: 768px) {
-    .format-item {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    
-    .format-label {
-      min-width: auto;
-    }
+
+/* Адаптивність */
+@media (max-width: 768px) {
+  .format-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
   }
-  </style>
+  
+  .format-label {
+    min-width: auto;
+  }
+}
+</style>

@@ -10,7 +10,7 @@ import StudyPage from '../pages/StudyPage.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/faq'
+    redirect: '/about'
   },
   {
     path: '/faq',

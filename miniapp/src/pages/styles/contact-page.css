@@ -1,0 +1,78 @@
+/* Стилі для сторінки контактів */
+
+/* Контейнер форми */
+.contact-form {
+  composes: form-container;
+}
+
+/* Група полів */
+.contact-form .form-group {
+  composes: form-group;
+}
+
+/* Лейбли */
+.contact-form .form-group label {
+  composes: form-label;
+}
+
+/* Інпути */
+.contact-form .form-group input {
+  composes: form-input;
+}
+
+.contact-form .form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: rgba(75, 85, 99, 0.8);
+}
+
+.contact-form .form-group input.error {
+  border-color: var(--color-error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.contact-form .form-group input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Повідомлення */
+.contact-form .hint-message {
+  composes: form-message hint;
+}
+
+.contact-form .error-message {
+  composes: form-message error;
+}
+
+/* Кнопка відправки */
+.contact-form .submit-btn {
+  composes: form-submit;
+}
+
+/* Адаптивність */
+@media (max-width: 768px) {
+  .contact-form .form-group input {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-md);
+  }
+  
+  .contact-form .form-group label {
+    font-size: var(--font-size-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-form .form-group input {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+  }
+  
+  .contact-form .form-group label {
+    font-size: var(--font-size-sm);
+  }
+  
+  .contact-form .hint-message,
+  .contact-form .error-message {
+    font-size: var(--font-size-xs);
+  }
+}

@@ -3,11 +3,12 @@
     title="Контакти"
     subtitle="Залиште свої дані для зв'язку"
   >
-    <div class="contact-form">
+    <div class="form-container">
       <div class="form-group">
-        <label>Ім'я</label>
+        <label class="form-label">Ім'я</label>
         <input 
           type="text" 
+          class="form-input"
           v-model="form.name" 
           placeholder="Введіть ваше ім'я"
           required
@@ -16,17 +17,17 @@
           maxlength="50"
           :class="{ 'error': showErrors && errors.name }"
         >
-        <!-- Підсказка про введення тільки літер -->
-        <span v-if="showNameHint" class="hint-message">
+        <span v-if="showNameHint" class="form-message hint">
           Введіть тільки літери
         </span>
-        <span v-if="showErrors && errors.name" class="error-message">{{ errors.name }}</span>
+        <span v-if="showErrors && errors.name" class="form-message error">{{ errors.name }}</span>
       </div>
       
       <div class="form-group">
-        <label>Номер телефону</label>
+        <label class="form-label">Номер телефону</label>
         <input 
           type="tel" 
+          class="form-input"
           v-model="form.phone" 
           placeholder="+380"
           required
@@ -35,15 +36,14 @@
           maxlength="13"
           :class="{ 'error': showErrors && errors.phone }"
         >
-        <!-- Підсказка про введення тільки цифр -->
-        <span v-if="showPhoneHint" class="hint-message">
+        <span v-if="showPhoneHint" class="form-message hint">
           Введіть тільки цифри номера телефону
         </span>
-        <span v-if="showErrors && errors.phone" class="error-message">{{ errors.phone }}</span>
+        <span v-if="showErrors && errors.phone" class="form-message error">{{ errors.phone }}</span>
       </div>
       
-      <button @click="submitForm" class="submit-btn">
-        Надіслати
+      <button @click="submitForm" class="btn btn-primary form-submit" :disabled="isSubmitting">
+        {{ isSubmitting ? 'Відправляємо...' : 'Надіслати' }}
       </button>
     </div>
   </BasePage>
@@ -52,6 +52,10 @@
 <script setup lang="ts">
 import BasePage from '../components/BasePage.vue'
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const form = ref({
   name: '',
@@ -66,6 +70,62 @@ const errors = ref({
 const showErrors = ref(false)
 const showPhoneHint = ref(false)
 const showNameHint = ref(false)
+const isSubmitting = ref(false)
+
+// Отримати параметри з URL
+const profession = route.query.profession as string
+const returnTo = route.query.returnTo as string
+const telegramId = route.query.telegramId as string
+
+const submitForm = async () => {
+  // Показати помилки тільки при спробі відправки
+  showErrors.value = true
+  
+  // Валідувати обидва поля
+  const isNameValid = validateName()
+  const isPhoneValid = validatePhone()
+  
+  if (isNameValid && isPhoneValid) {
+    isSubmitting.value = true
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/test-task-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.value.name,
+          phone: form.value.phone,
+          email: '',
+          profession: profession || 'qa',
+          telegram_id: telegramId ? parseInt(telegramId) : null
+        })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        alert('Контактні дані збережено успішно!')
+        
+        // Якщо є куди повертатися - повертаємося
+        if (returnTo) {
+          router.push(returnTo)
+        } else {
+          router.push('/')
+        }
+      } else {
+        alert(`Помилка: ${result.error}`)
+      }
+      
+    } catch (error) {
+      console.error('Помилка збереження:', error)
+      alert('Помилка збереження. Спробуйте ще раз.')
+    } finally {
+      isSubmitting.value = false
+    }
+  }
+}
 
 // Дозволити тільки літери, пробіли та дефіси в імені
 const allowOnlyLetters = (event: KeyboardEvent) => {
@@ -73,14 +133,12 @@ const allowOnlyLetters = (event: KeyboardEvent) => {
   
   // Дозволити літери (українські та англійські)
   if (/[а-яА-Яa-zA-Z]/.test(key)) {
-    // Якщо введено літеру, приховати підказку
     showNameHint.value = false
     return true
   }
   
   // Дозволити пробіл та дефіс
   if ([' ', '-'].includes(key)) {
-    // Якщо введено пробіл або дефіс, приховати підказку
     showNameHint.value = false
     return true
   }
@@ -93,7 +151,7 @@ const allowOnlyLetters = (event: KeyboardEvent) => {
   // Показати підказку при спробі ввести недопустимий символ
   showNameHint.value = true
   
-  // Заборонити всі інші символи (включаючи цифри)
+  // Заборонити всі інші символи
   event.preventDefault()
   return false
 }
@@ -172,7 +230,6 @@ const allowOnlyNumbers = (event: KeyboardEvent) => {
   
   // Дозволити цифри 0-9
   if (/[0-9]/.test(key)) {
-    // Якщо введено цифру, приховати підказку
     showPhoneHint.value = false
     return true
   }
@@ -259,114 +316,11 @@ const validateName = (): boolean => {
   errors.value.name = ''
   return true
 }
-
-const submitForm = () => {
-  // Показати помилки тільки при спробі відправки
-  showErrors.value = true
-  
-  // Валідувати обидва поля
-  const isNameValid = validateName()
-  const isPhoneValid = validatePhone()
-  
-  if (isNameValid && isPhoneValid) {
-    console.log('Форма відправлена:', form.value)
-    // Тут буде логіка відправки
-    alert('Дякуємо! Ваші дані збережено.')
-    
-    // Очистити форму та помилки
-    form.value.name = ''
-    form.value.phone = ''
-    errors.value.name = ''
-    errors.value.phone = ''
-    showErrors.value = false
-    showPhoneHint.value = false
-    showNameHint.value = false
-  }
-}
 </script>
 
 <style scoped>
-.contact-form {
-  max-width: 500px;
-  margin: 0 auto;
-}
+/* Стилі винесені в src/pages/styles/contact-page.css */
+/* Використовуємо спільні класи з forms.css та buttons.css */
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #ffffff;
-  font-weight: 500;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(55, 65, 81, 0.6);
-  border: 2px solid transparent;
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  background: rgba(75, 85, 99, 0.8);
-}
-
-.form-group input.error {
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.form-group input::placeholder {
-  color: #9ca3af;
-}
-
-.hint-message {
-  display: block;
-  margin-top: 6px;
-  color: #8b5cf6;
-  font-size: 14px;
-  font-weight: 500;
-  font-style: italic;
-}
-
-.error-message {
-  display: block;
-  margin-top: 6px;
-  color: #ef4444;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.submit-btn {
-  width: 100%;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-  margin-top: 8px;
-}
-
-.submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-}
-
-.submit-btn:active {
-  transform: translateY(0);
-}
+/* Додаткові специфічні стилі для контактної форми (якщо потрібно) */
 </style>

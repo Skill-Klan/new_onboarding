@@ -65,16 +65,7 @@
              <div class="course-name">Backend Development</div>
              <div class="course-level">Java, Python, C#</div>
            </div>
-           <!-- <div class="course-item">
-             <div class="course-icon">��</div>
-             <div class="course-name">UI/UX Design</div>
-             <div class="course-level">Basic & Pro</div>
-           </div> -->
-           <!-- <div class="course-item">
-             <div class="course-icon">��</div>
-             <div class="course-name">Digital Marketing</div>
-             <div class="course-level">SMM, SEO, PPC</div>
-           </div> -->
+
          </div>
        </InfoSection>
   
@@ -157,210 +148,71 @@ const navigateToFAQ = () => {
 </script>
   
   <style scoped>
-  .achievements-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 20px;
-    margin: 20px 0;
-  }
+  /* Стилі винесені в src/pages/styles/about-page.css */
+  /* Залишаємо тільки специфічні стилі, які не входять в спільні */
   
-  .achievement-item {
+  /* Кнопка FAQ (специфічна для цієї сторінки) */
+  .faq-section {
     text-align: center;
-    padding: 20px;
-    background: rgba(75, 85, 99, 0.3);
-    border-radius: 12px;
-    border: 1px solid rgba(139, 92, 246, 0.3);
+    margin: 30px 0;
   }
   
-  .achievement-number {
-    font-size: clamp(24px, 6vw, 32px);
-    font-weight: 700;
-    color: #8b5cf6;
-    margin-bottom: 8px;
-  }
-  
-  .achievement-text {
-    font-size: clamp(14px, 3.5vw, 16px);
-    color: #e5e7eb;
-    line-height: 1.4;
-  }
-  
-  .courses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin: 20px 0;
-  }
-  
-  .course-item {
-  padding: 16px;
-  background: rgba(75, 85, 99, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  text-align: center;
-  transition: all 0.2s ease;
-}
-
-.course-link {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.course-link:hover {
-  border-color: #8b5cf6;
-  background: rgba(75, 85, 99, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
-}
-
-.course-link:active {
-  transform: translateY(0);
-}
-  
-.course-item:hover {
-    border-color: #8b5cf6;
-    background: rgba(75, 85, 99, 0.5);
-  }
-
-  /* Додаткові стилі для мобільних */
-.course-link::after {
-  content: '👆';
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 14px;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-/* Адаптивність */
-@media (max-width: 768px) {
-  .course-link::after {
-    font-size: 16px;
-    top: 6px;
-    right: 6px;
-  }
-  
-  .course-link:hover {
-    transform: none; /* Вимикаємо hover ефекти на мобільних */
-  }
-}
-  
-  .course-icon {
-    font-size: 24px;
-    margin-bottom: 8px;
-  }
-  
-  .course-name {
-    font-size: clamp(14px, 3.5vw, 16px);
-    font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 4px;
-  }
-  
-  .course-level {
-    font-size: clamp(12px, 3vw, 14px);
-    color: #8b5cf6;
-    font-weight: 500;
-  }
-  
-  .testimonials {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin: 20px 0;
-  }
-  
-  .testimonial-item {
-    padding: 20px;
-    background: rgba(75, 85, 99, 0.3);
-    border-radius: 12px;
-    border-left: 4px solid #8b5cf6;
-  }
-  
-  .testimonial-text {
-    font-size: clamp(14px, 3.5vw, 16px);
-    color: #e5e7eb;
-    line-height: 1.6;
-    margin-bottom: 12px;
-    font-style: italic;
-  }
-  
-  .testimonial-author {
-    font-size: clamp(14px, 3.5vw, 16px);
-    font-weight: 600;
-    color: #8b5cf6;
-    margin-bottom: 4px;
-  }
-  
-  .testimonial-course {
-    font-size: clamp(12px, 3vw, 14px);
-    color: #9ca3af;
-  }
-  
-  .contact-info {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin: 20px 0;
-  }
-  
-  .contact-item {
+  .faq-button {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    background: rgba(75, 85, 99, 0.3);
-    border-radius: 8px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    margin: 0 auto;
+    justify-content: center;
   }
   
-  .contact-icon {
+  .faq-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  }
+  
+  .faq-button:active {
+    transform: translateY(0);
+  }
+  
+  .button-icon {
     font-size: 20px;
   }
   
-  .contact-text {
-    font-size: clamp(14px, 3.5vw, 16px);
-    color: #e5e7eb;
+  .button-text {
+    font-weight: 600;
   }
-
-  .contact-link {
-  text-decoration: none;
-  color: #e5e7eb;
-  transition: color 0.2s ease;
-}
-
-.contact-link:hover {
-  color: #8b5cf6;
-}
-
-.contact-link:active {
-  color: #7c3aed;
-}
   
-  /* Адаптивні стилі */
+  /* Адаптивність для кнопки FAQ */
   @media (max-width: 768px) {
-    .achievements-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
+    .faq-button {
+      padding: 14px 20px;
+      font-size: 15px;
     }
     
-    .courses-grid {
-      grid-template-columns: 1fr;
-      gap: 12px;
+    .button-icon {
+      font-size: 18px;
     }
   }
   
   @media (max-width: 480px) {
-    .achievements-grid {
-      grid-template-columns: 1fr;
-      gap: 12px;
+    .faq-button {
+      padding: 12px 16px;
+      font-size: 14px;
     }
     
-    .achievement-item,
-    .course-item,
-    .testimonial-item {
-      padding: 16px;
+    .button-icon {
+      font-size: 16px;
     }
   }
-  </style>
+</style>
