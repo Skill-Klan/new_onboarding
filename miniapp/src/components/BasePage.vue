@@ -11,40 +11,38 @@
       <slot></slot>
     </main>
     
-    <!-- Навігація -->
-    <nav v-if="navigation.length" class="page-navigation">
+    <!-- Кнопки дій -->
+    <div v-if="actions.length" class="page-actions">
       <button 
-        v-for="navItem in navigation" 
-        :key="navItem.path"
-        @click="navigateTo(navItem.path)"
-        class="nav-button"
+        v-for="action in actions" 
+        :key="action.id"
+        @click="action.onClick"
+        :class="['action-btn', action.variant]"
       >
-        {{ navItem.label }}
+        {{ action.label }}
       </button>
-    </nav>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-interface NavigationItem {
-  path: string
+interface ActionButton {
+  id: string
   label: string
+  variant: 'primary' | 'secondary' | 'outline'
+  onClick: () => void
 }
 
 interface Props {
   title: string
   subtitle?: string
-  navigation?: NavigationItem[]
+  actions?: ActionButton[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   subtitle: '',
-  navigation: () => []
+  actions: () => []
 })
-
-const navigateTo = (path: string) => {
-  console.log('Навігація до:', path)
-}
 </script>
 
 <style scoped>
@@ -55,14 +53,18 @@ const navigateTo = (path: string) => {
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   color: #ffffff;
   font-family: system-ui, -apple-system, sans-serif;
+  width: 100%;
+  max-width: 100%;
 }
 
 .page-header {
-  padding: 24px 20px;
+  padding: 24px 0;
   text-align: center;
   background: rgba(31, 41, 55, 0.8);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #374151;
+  width: 100%;
+  max-width: 100%;
 }
 
 .page-title {
@@ -73,6 +75,11 @@ const navigateTo = (path: string) => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  width: 100%;
+  max-width: calc(100% - 100px);
+  padding: 0 50px;
+  margin: 0 auto 12px auto;
+  box-sizing: border-box;
 }
 
 .page-subtitle {
@@ -80,45 +87,112 @@ const navigateTo = (path: string) => {
   color: #9ca3af;
   font-weight: 400;
   line-height: 1.4;
+  width: 100%;
+  max-width: calc(100% - 100px);
+  padding: 0 50px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .page-content {
   flex: 1;
-  padding: 20px;
-  max-width: 600px;
-  margin: 0 auto;
+  padding: 20px 0;
   width: 100%;
+  max-width: calc(100% - 100px);
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.page-navigation {
-  padding: 20px;
+.page-actions {
+  padding: 20px 0;
   display: flex;
   gap: 12px;
   justify-content: center;
   background: rgba(31, 41, 55, 0.8);
   backdrop-filter: blur(10px);
   border-top: 1px solid #374151;
+  width: 100%;
+  max-width: 100%;
 }
 
-.nav-button {
+.action-btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
   border: none;
-  border-radius: 12px;
-  cursor: pointer;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-sizing: border-box;
 }
 
-.nav-button:hover {
+.action-btn.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.action-btn.secondary {
+  background: rgba(75, 85, 99, 0.8);
+  color: white;
+}
+
+.action-btn.outline {
+  background: transparent;
+  color: #8b5cf6;
+  border: 2px solid #8b5cf6;
+}
+
+.action-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
-.nav-button:active {
+.action-btn:active {
   transform: translateY(0);
+}
+
+/* Адаптивні відступи для різних розмірів екрану */
+@media (max-width: 1200px) {
+  .page-title,
+  .page-subtitle,
+  .page-content {
+    max-width: calc(100% - 80px);
+    padding: 0 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title,
+  .page-subtitle,
+  .page-content {
+    max-width: calc(100% - 60px);
+    padding: 0 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title,
+  .page-subtitle,
+  .page-content {
+    max-width: calc(100% - 40px);
+    padding: 0 20px;
+  }
+  
+  .page-content {
+    padding: 15px 0;
+  }
+}
+
+@media (max-width: 320px) {
+  .page-title,
+  .page-subtitle,
+  .page-content {
+    max-width: calc(100% - 30px);
+    padding: 0 15px;
+  }
+  
+  .page-content {
+    padding: 10px 0;
+  }
 }
 </style>
