@@ -1,5 +1,8 @@
 <template>
   <div class="base-page">
+    <!-- Стрілка назад -->
+    <BackArrow v-if="showBackArrow" />
+    
     <!-- Заголовок сторінки -->
     <header class="page-header">
       <h1 class="page-title">{{ title }}</h1>
@@ -7,41 +10,23 @@
     </header>
     
     <!-- Основний контент -->
-    <main class="page-content">
+    <div class="page-content">
       <slot></slot>
-    </main>
-    
-    <!-- Кнопки дій -->
-    <div v-if="actions.length" class="page-actions">
-      <button 
-        v-for="action in actions" 
-        :key="action.id"
-        @click="action.onClick"
-        :class="['action-btn', action.variant]"
-      >
-        {{ action.label }}
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-interface ActionButton {
-  id: string
-  label: string
-  variant: 'primary' | 'secondary' | 'outline'
-  onClick: () => void
-}
+import BackArrow from './BackArrow.vue'
 
 interface Props {
-  title: string
+  title?: string
   subtitle?: string
-  actions?: ActionButton[]
+  showBackArrow?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  subtitle: '',
-  actions: () => []
+withDefaults(defineProps<Props>(), {
+  showBackArrow: false
 })
 </script>
 
