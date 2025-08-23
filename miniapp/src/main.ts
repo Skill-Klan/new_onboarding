@@ -6,7 +6,14 @@ import router from './router' // додати імпорт роутера
 
 const app = createApp(App)
 app.use(router) // підключити роутер
-app.mount('#app')
+
+// Fallback для роутингу
+router.isReady().then(() => {
+  app.mount('#app')
+}).catch((error) => {
+  console.error('Router error:', error)
+  app.mount('#app')
+})
 
 // ініціалізація Telegram Mini App
 if (WebApp?.ready) {
