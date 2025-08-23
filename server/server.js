@@ -208,13 +208,21 @@ app.post('/api/update-test-task-status', async (req, res) => {
     const userId = userResult.rows[0].id;
     
     // Оновити статус останньої заявки
-    await client.query(
+    const updateResult = await client.query(
       `UPDATE test_task_requests 
        SET status = $1, sent_at = CURRENT_TIMESTAMP 
-       WHERE user_id = $2 AND profession = $3 
-       ORDER BY created_at DESC LIMIT 1`,
+       WHERE id = (
+         SELECT id FROM test_task_requests 
+         WHERE user_id = $2 AND profession = $3 
+         ORDER BY created_at DESC 
+         LIMIT 1
+       )`,
       [status, userId, profession]
     );
+    
+    if (updateResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Заявку не знайдено' });
+    }
     
     await client.query('COMMIT');
     
