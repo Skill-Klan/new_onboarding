@@ -1,0 +1,86 @@
+# ========================================
+# .DOCKERIGNORE ДЛЯ SKILLKLAN SERVER
+# ========================================
+# Виключаємо файли, які не потрібні в Docker образі
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Тестові файли
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+.nyc_output/
+
+# Розробницькі файли
+.git/
+.gitignore
+.env.local
+.env.development
+.env.test
+.env.production.local
+
+# IDE та редактори
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Операційна система
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Документація
+README.md
+*.md
+docs/
+
+# Скрипти розгортання
+deploy.sh
+setup-database.sh
+ecosystem.config.js
+
+# Конфігурація Nginx (буде в окремому контейнері)
+nginx.conf
+
+# База даних (буде в окремому контейнері)
+database.sql
+*.sql
+
+# Тимчасові файли
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Архіви
+*.tar.gz
+*.zip
+*.rar
+
+# Резервні копії
+*.backup
+*.bak
+backup/
+
+
