@@ -28,7 +28,7 @@ sudo systemctl status nginx
 sudo systemctl status postgresql
 
 # Перевірка поточних портів
-sudo netstat -tlnp | grep -E ":(80|443|3000|5432)"
+sudo netstat -tlnp | grep -E ":(80|443|3001|5432)"
 ```
 
 ### **1.3 Створення резервної копії:**
@@ -166,7 +166,7 @@ docker-compose ps
 docker-compose logs -f
 
 # Перевірка портів
-sudo netstat -tlnp | grep -E ":(80|443|3000|5432)"
+sudo netstat -tlnp | grep -E ":(80|443|3001|5432)"
 ```
 
 ## 🧪 КРОК 6: ТЕСТУВАННЯ
@@ -174,10 +174,10 @@ sudo netstat -tlnp | grep -E ":(80|443|3000|5432)"
 ### **6.1 Тестування API:**
 ```bash
 # Health check
-curl http://localhost:3000/api/health
+curl http://localhost:3001/api/health
 
 # Тест бази даних
-curl http://localhost:3000/api/db-test
+curl http://localhost:3001/api/db-test
 ```
 
 ### **6.2 Тестування Frontend:**

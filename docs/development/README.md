@@ -8,7 +8,7 @@ SkillKlan Mini App - це Telegram Mini App для управління нави
 
 ### **Сервіси:**
 - **postgres**: PostgreSQL база даних (порт 5432)
-- **server**: Node.js API сервер (порт 3000)
+- **server**: Node.js API сервер (порт 3001)
 - **nginx**: Nginx веб-сервер (порти 80, 443)
 
 ### **Томи:**
