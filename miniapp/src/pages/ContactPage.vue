@@ -89,7 +89,7 @@ const submitForm = async () => {
     isSubmitting.value = true
     
     try {
-      const response = await fetch('http://localhost:3000/api/test-task-request', {
+      const response = await fetch('/api/test-task-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

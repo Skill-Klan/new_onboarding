@@ -119,9 +119,23 @@ const professionData = ref<ProfessionData>({
 // Завантажити дані з JSON
 const loadProfessionData = async () => {
   try {
-    const response = await fetch(`/src/data/professions/${props.profession}.json`)
-    const data = await response.json()
-    professionData.value = data
+    // Імпортуємо дані напряму замість fetch
+    let data
+    switch (props.profession) {
+      case 'ba':
+        data = await import('../data/professions/ba.json')
+        break
+      case 'be':
+        data = await import('../data/professions/be.json')
+        break
+      case 'qa':
+        data = await import('../data/professions/qa.json')
+        break
+      default:
+        console.error('Невідома професія:', props.profession)
+        return
+    }
+    professionData.value = data.default || data
   } catch (error) {
     console.error('Помилка завантаження даних професії:', error)
   }

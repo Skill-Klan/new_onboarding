@@ -63,7 +63,7 @@ const handleTestTaskRequest = async () => {
     
     // Перевірити, чи є користувач в базі даних
     console.log('12. Відправляємо запит до API...')
-    const apiUrl = `http://localhost:3000/api/check-user/${telegramUser.id}`
+    const apiUrl = `/api/check-user/${telegramUser.id}`
     console.log('13. API URL:', apiUrl)
     
     const checkResponse = await fetch(apiUrl)
@@ -153,7 +153,7 @@ const downloadTestTask = async () => {
     if (telegramUser) {
       console.log(' Оновлюємо статус в базі даних...')
       
-      const updateResponse = await fetch('http://localhost:3000/api/update-test-task-status', {
+      const updateResponse = await fetch('/api/update-test-task-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

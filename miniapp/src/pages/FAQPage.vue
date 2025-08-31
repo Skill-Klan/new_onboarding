@@ -89,9 +89,9 @@ const canGoBack = computed(() => {
 // Завантажити дані з JSON
 const loadFAQData = async () => {
   try {
-    const response = await fetch('/src/data/faq.json')
-    const data = await response.json()
-    faqData.value = data.faq
+    // Імпортуємо дані напряму замість fetch
+    const data = await import('../data/faq.json')
+    faqData.value = data.default.faq || data.faq
   } catch (error) {
     console.error('Помилка завантаження FAQ даних:', error)
   }

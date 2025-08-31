@@ -136,9 +136,23 @@ const showTestTaskButton = computed(() => {
   
   const loadStudyData = async () => {
     try {
-      const response = await fetch(`/src/data/study/${profession}.json`)
-      const data = await response.json()
-      studyData.value = data
+      // Імпортуємо дані напряму замість fetch
+      let data
+      switch (profession) {
+        case 'ba':
+          data = await import('../data/study/ba.json')
+          break
+        case 'be':
+          data = await import('../data/study/be.json')
+          break
+        case 'qa':
+          data = await import('../data/study/qa.json')
+          break
+        default:
+          console.error('Невідома професія для навчання:', profession)
+          return
+      }
+      studyData.value = data.default || data
     } catch (error) {
       console.error('Помилка завантаження даних про навчання:', error)
     }
