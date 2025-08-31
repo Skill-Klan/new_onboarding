@@ -1,9 +1,9 @@
 name: 🚀 Smart Deploy (Docker)
 
 on:
-  push:
-    branches: [ main, develop ]
-  workflow_dispatch:
+  # push:  # Вимкнено автоматичний запуск
+  #   branches: [ main, develop ]
+  workflow_dispatch:  # Залишено тільки ручний запуск
     inputs:
       environment:
         description: 'Environment to deploy to'

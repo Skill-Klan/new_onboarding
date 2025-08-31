@@ -22,6 +22,14 @@ jobs:
       - name: 🚀 Deploy to server
         run: |
           echo "🚀 Deploying to ${{ inputs.environment }}..."
-          echo "✅ Deployment completed successfully!"
-          echo "📊 This is a simplified deployment workflow"
-          echo "🔧 For complex deployments, use backup workflows"
+          echo "📋 Deployment Instructions:"
+          echo "1. SSH to server: ssh roman@37.57.209.201"
+          echo "2. Navigate to project: cd ~/new_onboarding"
+          echo "3. Pull latest changes: git pull origin main"
+          echo "4. Restart services: docker compose restart"
+          echo "5. Check health: curl http://localhost/api/health"
+          echo ""
+          echo "✅ Deployment instructions provided successfully!"
+          echo "🔧 Execute these commands manually on the server"
+          echo "📊 Environment: ${{ inputs.environment }}"
+          echo "🌐 Server: 37.57.209.201"
