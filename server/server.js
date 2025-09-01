@@ -33,6 +33,11 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // API для збереження заявки на тестове завдання
 app.post('/api/test-task-request', async (req, res) => {
   const client = await pool.connect();
@@ -150,11 +155,6 @@ app.get('/api/admin/requests', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 // API для перевірки існування користувача
 app.get('/api/check-user/:telegramId', async (req, res) => {
   try {
@@ -241,4 +241,10 @@ app.post('/api/update-test-task-status', async (req, res) => {
 process.on('SIGINT', () => {
   pool.end();
   process.exit(0);
+});
+
+// Запуск сервера (має бути в кінці файлу)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
