@@ -20,11 +20,11 @@
         >
           <h2 class="category-title">{{ category.category }}</h2>
           <span class="category-icon">
-            {{ isCategoryOpen(categoryIndex) ? '−' : '+' }}
+            {{ hasOpenQuestions(categoryIndex) ? '−' : '+' }}
           </span>
         </div>
         
-        <!-- Питання в категорії (показуються тільки якщо категорія відкрита) -->
+        <!-- Питання в категорії (показуються завжди, але згортаються при закритті категорії) -->
         <div 
           v-show="isCategoryOpen(categoryIndex)"
           class="category-questions"
@@ -72,6 +72,14 @@ const faqData = ref<FAQCategory[]>([])
 const openItems = ref<Set<string>>(new Set())
 const openCategories = ref<Set<number>>(new Set())
 
+// Функція для ініціалізації відкритих категорій
+const initializeOpenCategories = () => {
+  // Відкриваємо всі категорії за замовчуванням
+  faqData.value.forEach((_, index) => {
+    openCategories.value.add(index)
+  })
+}
+
 // Перевіряємо, чи можна показати кнопку назад
 const canGoBack = computed(() => {
   // Перевіряємо, чи є попередня сторінка в історії
@@ -92,6 +100,8 @@ const loadFAQData = async () => {
     // Імпортуємо дані напряму замість fetch
     const data = await import('../data/faq.json')
     faqData.value = data.default.faq || data.faq
+    // Ініціалізуємо відкриті категорії після завантаження даних
+    initializeOpenCategories()
   } catch (error) {
     console.error('Помилка завантаження FAQ даних:', error)
   }
@@ -107,6 +117,16 @@ const isItemOpen = (categoryIndex: number, questionIndex: number): boolean => {
   return openItems.value.has(`${categoryIndex}-${questionIndex}`)
 }
 
+// Перевірити, чи є відкриті питання в категорії
+const hasOpenQuestions = (categoryIndex: number): boolean => {
+  const category = faqData.value[categoryIndex]
+  if (!category) return false
+  
+  return category.questions.some((_, questionIndex) => 
+    openItems.value.has(`${categoryIndex}-${questionIndex}`)
+  )
+}
+
 // Переключити категорію
 const toggleCategory = (categoryIndex: number) => {
   if (openCategories.value.has(categoryIndex)) {
@@ -119,10 +139,23 @@ const toggleCategory = (categoryIndex: number) => {
 // Переключити питання
 const toggleItem = (categoryIndex: number, questionIndex: number) => {
   const key = `${categoryIndex}-${questionIndex}`
+  
   if (openItems.value.has(key)) {
+    // Закриваємо питання
     openItems.value.delete(key)
+    
+    // Перевіряємо, чи потрібно закрити категорію
+    if (!hasOpenQuestions(categoryIndex)) {
+      openCategories.value.delete(categoryIndex)
+    }
   } else {
+    // Відкриваємо питання
     openItems.value.add(key)
+    
+    // Автоматично відкриваємо категорію, якщо вона закрита
+    if (!openCategories.value.has(categoryIndex)) {
+      openCategories.value.add(categoryIndex)
+    }
   }
 }
 
