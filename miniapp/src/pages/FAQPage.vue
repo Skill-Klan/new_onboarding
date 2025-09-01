@@ -18,7 +18,10 @@
           class="category-header"
           @click="toggleCategory(categoryIndex)"
         >
-          <h2 class="category-title">{{ category.category }}</h2>
+          <h2 class="category-title">
+            <span class="category-icon">{{ isCategoryOpen(categoryIndex) ? '▼' : '▶' }}</span>
+            {{ category.category }}
+          </h2>
         </div>
         
         <!-- Питання в категорії (показуються завжди, але згортаються при закритті категорії) -->
@@ -33,6 +36,7 @@
             @click="toggleItem(categoryIndex, questionIndex)"
           >
             <div class="faq-question">
+              <span class="question-icon">{{ isItemOpen(categoryIndex, questionIndex) ? '●' : '○' }}</span>
               <span>{{ item.q }}</span>
             </div>
             <div 
@@ -137,11 +141,7 @@ const toggleItem = (categoryIndex: number, questionIndex: number) => {
   if (openItems.value.has(key)) {
     // Закриваємо питання
     openItems.value.delete(key)
-    
-    // Перевіряємо, чи потрібно закрити категорію
-    if (!hasOpenQuestions(categoryIndex)) {
-      openCategories.value.delete(categoryIndex)
-    }
+    // НЕ закриваємо категорію автоматично - користувач має контролювати це самостійно
   } else {
     // Відкриваємо питання
     openItems.value.add(key)
@@ -175,8 +175,111 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-/* Стилі винесені в src/pages/styles/faq-page.css */
-/* Використовуємо спільні класи з layout.css та variables.css */
+/* Покращена типографіка для FAQ */
+.faq-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
 
-/* Додаткові специфічні стилі для FAQ (якщо потрібно) */
+.category-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+  padding: 1rem 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-icon {
+  font-size: 0.8rem;
+  color: #60a5fa;
+  transition: transform 0.2s ease;
+}
+
+.category-title:hover {
+  color: #60a5fa;
+}
+
+.faq-question {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #e5e7eb;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.question-icon {
+  font-size: 0.7rem;
+  color: #93c5fd;
+  transition: color 0.2s ease;
+}
+
+.faq-question:hover {
+  color: #93c5fd;
+}
+
+.faq-answer {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #d1d5db;
+  line-height: 1.6;
+  padding: 0.5rem 0 1rem 0;
+  border-left: 3px solid #3b82f6;
+  padding-left: 1rem;
+  margin-left: 0.5rem;
+}
+
+/* Оптимізація для дотику */
+.category-header {
+  padding: 1rem;
+  margin: 0.5rem 0;
+  background: rgba(31, 41, 55, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  transition: all 0.2s ease;
+  min-height: 48px; /* Мінімальна висота для дотику */
+  display: flex;
+  align-items: center;
+}
+
+.category-header:hover {
+  background: rgba(31, 41, 55, 0.7);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.faq-item {
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0;
+  background: rgba(17, 24, 39, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  transition: all 0.2s ease;
+  min-height: 44px; /* Мінімальна висота для дотику */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.faq-item:hover {
+  background: rgba(17, 24, 39, 0.7);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.category-questions {
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(59, 130, 246, 0.2);
+}
 </style>
