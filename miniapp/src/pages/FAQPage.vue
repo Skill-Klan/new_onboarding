@@ -19,9 +19,6 @@
           @click="toggleCategory(categoryIndex)"
         >
           <h2 class="category-title">{{ category.category }}</h2>
-          <span class="category-icon">
-            {{ hasOpenQuestions(categoryIndex) ? '−' : '+' }}
-          </span>
         </div>
         
         <!-- Питання в категорії (показуються завжди, але згортаються при закритті категорії) -->
@@ -37,9 +34,6 @@
           >
             <div class="faq-question">
               <span>{{ item.q }}</span>
-              <span class="faq-icon">
-                {{ isItemOpen(categoryIndex, questionIndex) ? '−' : '+' }}
-              </span>
             </div>
             <div 
               v-show="isItemOpen(categoryIndex, questionIndex)" 
