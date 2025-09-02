@@ -43,7 +43,7 @@ app.post('/api/test-task-request', async (req, res) => {
   const client = await pool.connect();
   
   try {
-    const { name, phone, email, profession, telegram_id } = req.body;
+    const { name, phone, email, profession, telegram_id, contact_source = 'manual' } = req.body;
     
     // Валідація даних
     if (!name || !phone || !profession) {
@@ -57,6 +57,31 @@ app.post('/api/test-task-request', async (req, res) => {
         error: 'Невірна професія' 
       });
     }
+
+    // Валідація джерела контактів
+    if (!['telegram', 'manual'].includes(contact_source)) {
+      return res.status(400).json({ 
+        error: 'Невірне джерело контактів' 
+      });
+    }
+
+    // Валідація номера телефону для українських номерів
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    if (cleanPhone.length !== 10 || !cleanPhone.startsWith('0')) {
+      return res.status(400).json({ 
+        error: 'Невірний формат номера телефону. Очікується український номер (10 цифр, починається з 0)' 
+      });
+    }
+
+    // Валідація імені
+    if (name.trim().length < 2 || name.trim().length > 50) {
+      return res.status(400).json({ 
+        error: 'Ім\'я має бути від 2 до 50 символів' 
+      });
+    }
+
+    // Логування джерела контактів
+    console.log(`📝 Збереження контактів з джерела: ${contact_source} для telegram_id: ${telegram_id}`);
     
     await client.query('BEGIN');
     
@@ -70,21 +95,25 @@ app.post('/api/test-task-request', async (req, res) => {
     
     if (userResult.rows.length === 0) {
       // Створюємо нового користувача
+      console.log(`👤 Створюємо нового користувача з telegram_id: ${telegram_id}`);
       const newUserResult = await client.query(
         'INSERT INTO users (telegram_id, name, phone, email) VALUES ($1, $2, $3, $4) RETURNING id',
-        [telegram_id, name, phone, email]
+        [telegram_id, name.trim(), phone, email || '']
       );
       userId = newUserResult.rows[0].id;
+      console.log(`✅ Користувача створено з ID: ${userId}`);
     } else {
       // Оновлюємо існуючого користувача
+      console.log(`🔄 Оновлюємо існуючого користувача з ID: ${userResult.rows[0].id}`);
       await client.query(
         'UPDATE users SET name = $1, phone = $2, email = $3, updated_at = CURRENT_TIMESTAMP WHERE telegram_id = $4',
-        [name, phone, email, telegram_id]
+        [name.trim(), phone, email || '', telegram_id]
       );
       userId = userResult.rows[0].id;
     }
     
     // Створюємо заявку на тестове завдання
+    console.log(`📋 Створюємо заявку на тестове завдання для користувача ${userId}, професія: ${profession}`);
     await client.query(
       'INSERT INTO test_task_requests (user_id, profession) VALUES ($1, $2)',
       [userId, profession]
@@ -92,15 +121,18 @@ app.post('/api/test-task-request', async (req, res) => {
     
     await client.query('COMMIT');
     
+    console.log(`✅ Заявку успішно збережено. User ID: ${userId}, Джерело: ${contact_source}`);
+    
     res.json({ 
       success: true, 
       message: 'Заявку на тестове завдання збережено успішно',
-      user_id: userId
+      user_id: userId,
+      contact_source: contact_source
     });
     
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error saving test task request:', error);
+    console.error('❌ Помилка збереження заявки:', error);
     res.status(500).json({ 
       error: 'Помилка збереження заявки. Спробуйте ще раз.' 
     });
