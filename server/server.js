@@ -4,6 +4,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
+// Імпорт бота
+const SkillKlanBot = require('./bot/bot');
+
 const app = express();
 
 // Middleware
@@ -275,8 +278,29 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Запуск сервера (має бути в кінці файлу)
+// Запуск сервера та бота
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+async function startServer() {
+  try {
+    // Запускаємо Express сервер
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+
+    // Запускаємо Telegram бота (якщо є токен)
+    if (process.env.TELEGRAM_BOT_TOKEN) {
+      const bot = new SkillKlanBot();
+      await bot.start();
+      console.log('🤖 Telegram bot запущено');
+    } else {
+      console.log('⚠️ TELEGRAM_BOT_TOKEN не встановлено, бот не запущено');
+    }
+
+  } catch (error) {
+    console.error('❌ Помилка запуску сервера:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
