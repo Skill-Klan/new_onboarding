@@ -106,18 +106,31 @@ class BaseHandler {
    */
   async safeReply(ctx, message, keyboard = null) {
     try {
+      console.log('📤 safeReply: Початок відправки повідомлення');
+      console.log('📤 safeReply: message:', message);
+      console.log('📤 safeReply: keyboard:', keyboard);
+      
       if (keyboard) {
+        console.log('📤 safeReply: Відправляємо з клавіатурою');
         await ctx.reply(message, keyboard);
+        console.log('✅ safeReply: Повідомлення з клавіатурою відправлено');
       } else {
+        console.log('📤 safeReply: Відправляємо без клавіатури');
         await ctx.reply(message);
+        console.log('✅ safeReply: Повідомлення без клавіатури відправлено');
       }
     } catch (error) {
-      console.error('Помилка відправки повідомлення:', error);
+      console.error('❌ safeReply: Помилка відправки повідомлення:', error);
+      console.error('❌ safeReply: Stack trace:', error.stack);
+      
       // Спробуємо відправити без клавіатури
       try {
+        console.log('🔄 safeReply: Спробуємо відправити без клавіатури');
         await ctx.reply(message);
+        console.log('✅ safeReply: Повідомлення без клавіатури відправлено після помилки');
       } catch (retryError) {
-        console.error('Критична помилка відправки повідомлення:', retryError);
+        console.error('❌ safeReply: Критична помилка відправки повідомлення:', retryError);
+        console.error('❌ safeReply: Retry stack trace:', retryError.stack);
       }
     }
   }
