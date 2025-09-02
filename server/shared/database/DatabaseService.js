@@ -27,7 +27,26 @@ class DatabaseService {
       return result.rows[0] || null;
     } catch (error) {
       console.error('Помилка отримання користувача:', error);
-      throw error;
+      return null; // Не кидаємо помилку
+    }
+  }
+
+  /**
+   * Отримання стану користувача за Telegram ID
+   */
+  async getUserState(telegramId) {
+    try {
+      const query = `
+        SELECT u.*, us.current_step, us.data, us.updated_at as state_updated_at
+        FROM users u
+        LEFT JOIN user_states us ON u.id = us.user_id
+        WHERE u.telegram_id = $1
+      `;
+      const result = await this.pool.query(query, [telegramId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Помилка отримання стану користувача:', error);
+      return null; // Не кидаємо помилку
     }
   }
 
@@ -36,38 +55,61 @@ class DatabaseService {
    */
   async saveUserState(userState) {
     try {
-      const query = `
+      // Спочатку створюємо/оновлюємо користувача в таблиці users
+      const userQuery = `
         INSERT INTO users (
-          telegram_id, username, current_step, selected_profession, 
-          contact_data, task_sent, last_activity, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          telegram_id, username, name, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (telegram_id) 
         DO UPDATE SET
           username = EXCLUDED.username,
+          name = EXCLUDED.name,
+          updated_at = EXCLUDED.updated_at
+        RETURNING id
+      `;
+      
+      const userValues = [
+        userState.telegramId,
+        userState.username,
+        userState.username, // name = username
+        new Date(),
+        new Date()
+      ];
+
+      const userResult = await this.pool.query(userQuery, userValues);
+      const userId = userResult.rows[0].id;
+
+      // Тепер зберігаємо стан в таблиці user_states
+      const stateQuery = `
+        INSERT INTO user_states (
+          user_id, current_step, data, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (user_id) 
+        DO UPDATE SET
           current_step = EXCLUDED.current_step,
-          selected_profession = EXCLUDED.selected_profession,
-          contact_data = EXCLUDED.contact_data,
-          task_sent = EXCLUDED.task_sent,
-          last_activity = EXCLUDED.last_activity
+          data = EXCLUDED.data,
+          updated_at = EXCLUDED.updated_at
         RETURNING *
       `;
       
-      const values = [
-        userState.telegramId,
-        userState.username,
+      const stateValues = [
+        userId,
         userState.currentStep,
-        userState.selectedProfession,
-        userState.contactData ? JSON.stringify(userState.contactData) : null,
-        userState.taskSent,
-        userState.lastActivity,
-        userState.createdAt
+        JSON.stringify({
+          selectedProfession: userState.selectedProfession,
+          contactData: userState.contactData,
+          taskSent: userState.taskSent
+        }),
+        new Date(),
+        new Date()
       ];
 
-      const result = await this.pool.query(query, values);
-      return result.rows[0];
+      const stateResult = await this.pool.query(stateQuery, stateValues);
+      return { ...stateResult.rows[0], userId };
     } catch (error) {
       console.error('Помилка збереження стану користувача:', error);
-      throw error;
+      // Не кидаємо помилку, щоб бот продовжував працювати
+      return null;
     }
   }
 
@@ -77,14 +119,15 @@ class DatabaseService {
   async saveContact(userId, contactData) {
     try {
       const query = `
-        INSERT INTO contacts (
-          user_id, phone_number, first_name, last_name, created_at
-        ) VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO bot_contacts (
+          user_id, phone_number, first_name, last_name, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (user_id) 
         DO UPDATE SET
           phone_number = EXCLUDED.phone_number,
           first_name = EXCLUDED.first_name,
-          last_name = EXCLUDED.last_name
+          last_name = EXCLUDED.last_name,
+          updated_at = EXCLUDED.updated_at
         RETURNING *
       `;
       
@@ -93,14 +136,15 @@ class DatabaseService {
         contactData.phoneNumber,
         contactData.firstName,
         contactData.lastName,
-        contactData.createdAt
+        new Date(),
+        new Date()
       ];
 
       const result = await this.pool.query(query, values);
       return result.rows[0];
     } catch (error) {
       console.error('Помилка збереження контакту:', error);
-      throw error;
+      return null; // Не кидаємо помилку
     }
   }
 
@@ -110,14 +154,14 @@ class DatabaseService {
   async getContactByUserId(userId) {
     try {
       const query = `
-        SELECT * FROM contacts 
+        SELECT * FROM bot_contacts 
         WHERE user_id = $1
       `;
       const result = await this.pool.query(query, [userId]);
       return result.rows[0] || null;
     } catch (error) {
       console.error('Помилка отримання контакту:', error);
-      throw error;
+      return null; // Не кидаємо помилку
     }
   }
 
@@ -127,10 +171,10 @@ class DatabaseService {
   async saveTaskDelivery(userId, taskData) {
     try {
       const query = `
-        INSERT INTO task_deliveries (
+        INSERT INTO bot_task_deliveries (
           user_id, profession, task_title, task_description, 
-          task_content, delivered_at
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+          task_content, delivered_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `;
       
@@ -140,6 +184,8 @@ class DatabaseService {
         taskData.title,
         taskData.description,
         taskData.content,
+        new Date(),
+        new Date(),
         new Date()
       ];
 
@@ -147,7 +193,7 @@ class DatabaseService {
       return result.rows[0];
     } catch (error) {
       console.error('Помилка збереження доставки завдання:', error);
-      throw error;
+      return null; // Не кидаємо помилку
     }
   }
 
@@ -162,7 +208,7 @@ class DatabaseService {
           COUNT(*) as total_deliveries,
           COUNT(DISTINCT user_id) as unique_users,
           DATE(delivered_at) as delivery_date
-        FROM task_deliveries 
+        FROM bot_task_deliveries 
         GROUP BY profession, DATE(delivered_at)
         ORDER BY delivery_date DESC
       `;
@@ -171,7 +217,7 @@ class DatabaseService {
       return result.rows;
     } catch (error) {
       console.error('Помилка отримання статистики:', error);
-      throw error;
+      return []; // Повертаємо пустий масив замість кидання помилки
     }
   }
 
@@ -181,8 +227,8 @@ class DatabaseService {
   async cleanupOldStates(cutoffTime) {
     try {
       const query = `
-        DELETE FROM users 
-        WHERE last_activity < $1 
+        DELETE FROM user_states 
+        WHERE updated_at < $1 
         AND current_step != 'completed'
       `;
       
@@ -190,7 +236,7 @@ class DatabaseService {
       return result.rowCount;
     } catch (error) {
       console.error('Помилка очищення застарілих станів:', error);
-      throw error;
+      return 0; // Повертаємо 0 замість кидання помилки
     }
   }
 
