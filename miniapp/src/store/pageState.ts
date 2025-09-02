@@ -1,9 +1,9 @@
 import { ref } from 'vue'
 
-// Зафіксувати тільки FAQ сторінку
+// FAQ сторінка завжди активна
 export const currentPage = ref('faq')
 
-// Функція не потрібна, але залишаємо для майбутнього
+// Функція для майбутнього розширення
 export const showPage = (page: string) => {
   currentPage.value = page
 }

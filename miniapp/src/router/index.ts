@@ -1,51 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import FAQPage from '../pages/FAQPage.vue'
-import ContactPage from '../pages/ContactPage.vue'
-import QaPage from '../pages/QaPage.vue'
-import BaPage from '../pages/BaPage.vue'
-import BePage from '../pages/BePage.vue'
-import AboutPage from '../pages/AboutPage.vue'
-import StudyPage from '../pages/StudyPage.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: '/about'
+    redirect: '/faq'
   },
   {
     path: '/faq',
     name: 'FAQ',
     component: FAQPage
-  },
-  {
-    path: '/contact',
-    name: 'Contact',
-    component: ContactPage
-  },
-  {
-    path: '/qa',
-    name: 'QA',
-    component: QaPage
-  },
-  {
-    path: '/ba',
-    name: 'BA',
-    component: BaPage
-  },
-  {
-    path: '/be',
-    name: 'BE',
-    component: BePage
-  },
-  {
-    path: '/about',
-    name: 'About',
-    component: AboutPage
-  },
-  {
-    path: '/study/:profession',
-    name: 'Study',
-    component: StudyPage
   }
 ]
 

@@ -1,11 +1,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import { WebApp } from './core/telegram'
 import './styles/index.css'
-import router from './router' // додати імпорт роутера
+import router from './router'
 
 const app = createApp(App)
-app.use(router) // підключити роутер
+app.use(router)
 
 // Fallback для роутингу
 router.isReady().then(() => {
@@ -14,9 +13,3 @@ router.isReady().then(() => {
   console.error('Router error:', error)
   app.mount('#app')
 })
-
-// ініціалізація Telegram Mini App
-if (WebApp?.ready) {
-  WebApp.ready()
-  WebApp.expand()
-}

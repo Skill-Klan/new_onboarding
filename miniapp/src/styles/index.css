@@ -13,9 +13,7 @@
 @import './forms.css';
 
 /* 5. Стилі сторінок */
-@import '../pages/styles/about-page.css';
-@import '../pages/styles/contact-page.css';
-@import '../pages/styles/faq-page.css';
+/* FAQ стилі залишаються в компоненті */
 
 /* Базові стилі для всього додатку */
 * {
