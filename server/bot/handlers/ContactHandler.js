@@ -40,14 +40,19 @@ class ContactHandler extends BaseHandler {
       await this.userStateService.setContactData(userState.telegramId, contactData);
       console.log('🔍🔍🔍 ContactHandler.execute: стан користувача оновлено');
 
-      // Відправляємо підтвердження
-      console.log('🔍🔍🔍 ContactHandler.execute: відправляємо підтвердження...');
+      // Відправляємо підтвердження та одразу завдання
+      console.log('🔍🔍🔍 ContactHandler.execute: відправляємо підтвердження та завдання...');
       await this.safeReply(
         ctx, 
-        MessageTemplates.getContactConfirmationMessage(),
+        'Надсилаю для тебе тестове завдання.',
         KeyboardTemplates.removeKeyboard()
       );
-      console.log('🔍🔍🔍 ContactHandler.execute: підтвердження відправлено');
+      console.log('🔍🔍🔍 ContactHandler.execute: підтвердження та завдання відправлено');
+
+      // Відправляємо завдання
+      const TaskHandler = require('./TaskHandler');
+      const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService);
+      await taskHandler.execute(ctx, userState);
 
       // Логуємо успішне збереження контакту
       console.log(`Контакт збережено для користувача ${userState.telegramId}: ${this.contactService.maskPhoneNumber(contactData.phoneNumber)}`);

@@ -18,17 +18,39 @@ class ReadyToTryHandler extends BaseHandler {
       return;
     }
 
-    // Оновлюємо крок користувача
-    console.log('🔍🔍🔍 ReadyToTryHandler.execute: оновлюємо крок на CONTACT_REQUEST');
-    await this.userStateService.updateStep(userState.telegramId, BotStep.CONTACT_REQUEST);
+    // Перевіряємо, чи вже є контакт у користувача
+    console.log('🔍🔍🔍 ReadyToTryHandler.execute: перевіряємо наявність контакту...');
+    const hasContact = await this.contactService.hasContact(userState.telegramId);
+    console.log('🔍🔍🔍 ReadyToTryHandler.execute: hasContact =', hasContact);
 
-    // Відправляємо запит контакту
-    console.log('🔍🔍🔍 ReadyToTryHandler.execute: відправляємо запит контакту');
-    await this.safeReply(
-      ctx, 
-      MessageTemplates.getContactRequestMessage(),
-      KeyboardTemplates.getContactKeyboard()
-    );
+    if (hasContact) {
+      // Якщо контакт вже є, одразу надсилаємо завдання
+      console.log('🔍🔍🔍 ReadyToTryHandler.execute: контакт вже є, надсилаємо завдання');
+      await this.safeReply(ctx, 'Надсилаю для тебе тестове завдання.');
+      
+      // Оновлюємо крок на TASK_DELIVERY
+      await this.userStateService.updateStep(userState.telegramId, BotStep.TASK_DELIVERY);
+      
+      // Відправляємо завдання
+      const TaskHandler = require('./TaskHandler');
+      const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService);
+      await taskHandler.execute(ctx, userState);
+    } else {
+      // Якщо контакту немає, запитуємо його
+      console.log('🔍🔍🔍 ReadyToTryHandler.execute: контакту немає, запитуємо');
+      
+      // Оновлюємо крок користувача
+      console.log('🔍🔍🔍 ReadyToTryHandler.execute: оновлюємо крок на CONTACT_REQUEST');
+      await this.userStateService.updateStep(userState.telegramId, BotStep.CONTACT_REQUEST);
+
+      // Відправляємо запит контакту
+      console.log('🔍🔍🔍 ReadyToTryHandler.execute: відправляємо запит контакту');
+      await this.safeReply(
+        ctx, 
+        MessageTemplates.getContactRequestMessage(),
+        KeyboardTemplates.getContactKeyboard()
+      );
+    }
     
     // Підтверджуємо callback
     await ctx.answerCbQuery();

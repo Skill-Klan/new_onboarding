@@ -1,40 +1,58 @@
-// Обробник доставки завдань
+// Обробник для відправки тестових завдань
 
 const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class TaskHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const MessageTemplates = require('../templates/messages');
+    console.log('🔍🔍🔍 TaskHandler.execute: ПОЧАТОК');
+    console.log('🔍🔍🔍 TaskHandler.execute: userState =', userState);
     
-    // Перевіряємо, чи є всі необхідні дані
-    if (!userState.selectedProfession || !userState.contactData) {
-      await this.safeReply(ctx, MessageTemplates.getErrorMessage());
-      return;
-    }
-
     try {
-      // Генеруємо завдання
-      const taskData = this.taskService.generateTask(userState.selectedProfession);
-      
-      // Відправляємо завдання
-      await this.taskService.sendTask(ctx, taskData);
-      
-      // Відстежуємо доставку
-      await this.taskService.trackTaskDelivery(userState.telegramId, taskData);
-      
-      // Позначаємо завдання як відправлене
-      await this.userStateService.markTaskSent(userState.telegramId);
-      
-      // Відправляємо фінальне повідомлення
-      await this.safeReply(ctx, MessageTemplates.getCompletionMessage());
+      // Перевіряємо, чи вибрана професія
+      if (!userState.selectedProfession) {
+        console.log('🔍🔍🔍 TaskHandler.execute: професія не вибрана');
+        await this.safeReply(ctx, 'Помилка: професія не вибрана. Спробуйте /start');
+        return;
+      }
 
-      // Логуємо успішну доставку
-      console.log(`Завдання доставлено користувачу ${userState.telegramId} для професії ${userState.selectedProfession}`);
+      // Отримуємо інформацію про завдання
+      const taskInfo = this.taskService.getTaskInfo(userState.selectedProfession);
+      if (!taskInfo) {
+        console.log('🔍🔍🔍 TaskHandler.execute: інформація про завдання не знайдена');
+        await this.safeReply(ctx, 'Помилка: завдання для цієї професії не знайдено');
+        return;
+      }
+
+      // Перевіряємо, чи існує файл завдання
+      const fileExists = await this.taskService.taskFileExists(userState.selectedProfession);
+      if (!fileExists) {
+        console.log('🔍🔍🔍 TaskHandler.execute: файл завдання не існує');
+        await this.safeReply(ctx, 'Помилка: файл завдання не знайдено');
+        return;
+      }
+
+      // Отримуємо шлях до файлу
+      const filePath = this.taskService.getTaskFilePath(userState.selectedProfession);
+      console.log('🔍🔍🔍 TaskHandler.execute: відправляємо файл =', filePath);
+
+      // Відправляємо файл
+      await ctx.replyWithDocument(
+        { source: filePath },
+        {
+          caption: `📋 ${taskInfo.title}\n\n${taskInfo.description}\n\n⏰ Термін виконання: ${taskInfo.deadline}\n\nУспіхів! 🚀`
+        }
+      );
+
+      console.log('🔍🔍🔍 TaskHandler.execute: файл відправлено успішно');
+
+      // Оновлюємо стан користувача
+      await this.userStateService.markTaskSent(userState.telegramId);
+      console.log('🔍🔍🔍 TaskHandler.execute: стан користувача оновлено');
 
     } catch (error) {
-      console.error('Помилка доставки завдання:', error);
-      await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+      console.error('🔍🔍🔍 TaskHandler.execute: ПОМИЛКА =', error);
+      await this.safeReply(ctx, 'Вибачте, сталася помилка при відправці завдання. Спробуйте ще раз.');
     }
   }
 
@@ -46,10 +64,19 @@ class TaskHandler extends BaseHandler {
    * Валідація стану для цього обробника
    */
   validateState(userState) {
-    return super.validateState(userState) && 
-           userState.currentStep === BotStep.TASK_DELIVERY &&
-           userState.selectedProfession &&
-           userState.contactData;
+    console.log('🔍🔍🔍 TaskHandler.validateState: ПОЧАТОК');
+    console.log('🔍🔍🔍 TaskHandler.validateState: userState =', userState);
+    
+    const superValid = super.validateState(userState);
+    const stepValid = userState.currentStep === BotStep.TASK_DELIVERY;
+    const professionValid = !!userState.selectedProfession;
+    
+    console.log('🔍🔍🔍 TaskHandler.validateState: superValid =', superValid);
+    console.log('🔍🔍🔍 TaskHandler.validateState: stepValid =', stepValid);
+    console.log('🔍🔍🔍 TaskHandler.validateState: professionValid =', professionValid);
+    console.log('🔍🔍🔍 TaskHandler.validateState: загальний результат =', superValid && stepValid && professionValid);
+    
+    return superValid && stepValid && professionValid;
   }
 }
 
