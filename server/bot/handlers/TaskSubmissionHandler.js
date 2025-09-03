@@ -50,9 +50,19 @@ class TaskSubmissionHandler extends BaseHandler {
    * Валідація стану для цього обробника
    */
   validateState(userState) {
-    return super.validateState(userState) && 
-           userState.currentStep === BotStep.COMPLETED &&
-           userState.taskSent;
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: ПОЧАТОК');
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: userState =', userState);
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: userState.currentStep =', userState?.currentStep);
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: userState.taskSent =', userState?.taskSent);
+    
+    const superValid = super.validateState(userState);
+    const taskSentValid = userState.taskSent === true;
+    
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: superValid =', superValid);
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: taskSentValid =', taskSentValid);
+    console.log('🔍🔍🔍 TaskSubmissionHandler.validateState: загальний результат =', superValid && taskSentValid);
+    
+    return superValid && taskSentValid;
   }
 }
 

@@ -50,6 +50,23 @@ class TaskHandler extends BaseHandler {
       await this.userStateService.markTaskSent(userState.telegramId);
       console.log('🔍🔍🔍 TaskHandler.execute: стан користувача оновлено');
 
+      // Відправляємо повідомлення з кнопкою через 10 секунд
+      console.log('🔍🔍🔍 TaskHandler.execute: плануємо відправку кнопки через 10 секунд');
+      setTimeout(async () => {
+        try {
+          const MessageTemplates = require('../templates/messages');
+          const KeyboardTemplates = require('../templates/keyboards');
+          
+          await ctx.reply(
+            MessageTemplates.getTaskSubmissionPromptMessage(),
+            KeyboardTemplates.getTaskCompletionKeyboard()
+          );
+          console.log('🔍🔍🔍 TaskHandler.execute: кнопка здачі завдання відправлена');
+        } catch (error) {
+          console.error('🔍🔍🔍 TaskHandler.execute: помилка відправки кнопки =', error);
+        }
+      }, 10000); // 10 секунд
+
     } catch (error) {
       console.error('🔍🔍🔍 TaskHandler.execute: ПОМИЛКА =', error);
       await this.safeReply(ctx, 'Вибачте, сталася помилка при відправці завдання. Спробуйте ще раз.');
