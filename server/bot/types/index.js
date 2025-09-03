@@ -73,7 +73,18 @@ class UserState {
     const state = new UserState(data.id, data.telegram_id, data.username);
     state.currentStep = data.current_step || BotStep.START;
     state.selectedProfession = data.selected_profession;
-    state.contactData = data.contact_data ? JSON.parse(data.contact_data) : null;
+    
+    // contact_data може бути як об'єктом, так і JSON рядком
+    if (data.contact_data) {
+      if (typeof data.contact_data === 'string') {
+        state.contactData = JSON.parse(data.contact_data);
+      } else {
+        state.contactData = data.contact_data;
+      }
+    } else {
+      state.contactData = null;
+    }
+    
     state.taskSent = data.task_sent || false;
     state.lastActivity = new Date(data.last_activity);
     state.createdAt = new Date(data.created_at);

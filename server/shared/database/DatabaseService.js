@@ -105,6 +105,10 @@ class DatabaseService {
    * Збереження контакту
    */
   async saveContact(userId, contactData) {
+    console.log('🔍🔍🔍 DatabaseService.saveContact: ПОЧАТОК');
+    console.log('🔍🔍🔍 DatabaseService.saveContact: userId =', userId);
+    console.log('🔍🔍🔍 DatabaseService.saveContact: contactData =', contactData);
+    
     try {
       const query = `
         INSERT INTO bot_contacts (
@@ -128,10 +132,15 @@ class DatabaseService {
         new Date()
       ];
 
+      console.log('🔍🔍🔍 DatabaseService.saveContact: виконуємо запит...');
+      console.log('🔍🔍🔍 DatabaseService.saveContact: values =', values);
+      
       const result = await this.pool.query(query, values);
+      console.log('🔍🔍🔍 DatabaseService.saveContact: результат =', result.rows[0]);
+      
       return result.rows[0];
     } catch (error) {
-      console.error('Помилка збереження контакту:', error);
+      console.error('🔍🔍🔍 DatabaseService.saveContact: ПОМИЛКА =', error);
       return null; // Не кидаємо помилку
     }
   }

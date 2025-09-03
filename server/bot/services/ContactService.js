@@ -47,20 +47,31 @@ class ContactService {
    * Збереження контакту в БД
    */
   async saveContact(userId, contactData) {
+    console.log('🔍🔍🔍 ContactService.saveContact: ПОЧАТОК');
+    console.log('🔍🔍🔍 ContactService.saveContact: userId =', userId);
+    console.log('🔍🔍🔍 ContactService.saveContact: contactData =', contactData);
+    
     try {
+      console.log('🔍🔍🔍 ContactService.saveContact: валідуємо контакт...');
       const validation = this.validateContact(contactData);
+      console.log('🔍🔍🔍 ContactService.saveContact: validation =', validation);
+      
       if (!validation.isValid) {
         throw new Error(validation.error);
       }
 
+      console.log('🔍🔍🔍 ContactService.saveContact: конвертуємо контакт...');
       const contact = this.convertTelegramContact(contactData);
+      console.log('🔍🔍🔍 ContactService.saveContact: конвертований контакт =', contact);
       
       // Зберігаємо в БД
-      await this.databaseService.saveContact(userId, contact);
+      console.log('🔍🔍🔍 ContactService.saveContact: зберігаємо в БД...');
+      const savedContact = await this.databaseService.saveContact(userId, contact);
+      console.log('🔍🔍🔍 ContactService.saveContact: збережено в БД =', savedContact);
       
       return contact;
     } catch (error) {
-      console.error('Помилка збереження контакту:', error);
+      console.error('🔍🔍🔍 ContactService.saveContact: ПОМИЛКА =', error);
       throw error;
     }
   }
