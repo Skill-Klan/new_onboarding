@@ -9,10 +9,10 @@ class KeyboardTemplates {
   static getProfessionKeyboard() {
     return Markup.inlineKeyboard([
       [
-        Markup.button.callback('1️⃣ QA (тестувальник)', 'profession_QA'),
-        Markup.button.callback('2️⃣ Business Analyst', 'profession_BA')
+        Markup.button.callback('1️⃣ QA — хочу тестувати!', 'profession_QA'),
+        Markup.button.callback('2️⃣ Business Analyst — хочу аналізувати!', 'profession_BA')
       ],
-      [Markup.button.callback('📚 Дізнатися більше (FAQ)', 'show_faq')]
+      [Markup.button.webApp('❓ Маєш питання? Подивись відповіді', process.env.WEBAPP_URL || 'https://37.57.209.201.nip.io/faq')]
     ]);
   }
 
@@ -21,7 +21,7 @@ class KeyboardTemplates {
    */
   static getReadyToTryKeyboard() {
     return Markup.inlineKeyboard([
-      [Markup.button.callback('Я готовий спробувати 🚀', 'ready_to_try')]
+      [Markup.button.callback('Так! Хочу спробувати 🚀', 'ready_to_try')]
     ]);
   }
 
@@ -39,7 +39,7 @@ class KeyboardTemplates {
    */
   static getTaskCompletionKeyboard() {
     return Markup.inlineKeyboard([
-      [Markup.button.callback('Я готовий здати тестове завдання', 'submit_task')]
+      [Markup.button.callback('Надсилаю завдання 📝', 'submit_task')]
     ]);
   }
 

@@ -4,29 +4,20 @@ const BaseHandler = require('./BaseHandler');
 
 class FAQHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const KeyboardTemplates = require('../templates/keyboards');
-    
-    // URL до WebApp FAQ
+    // URL до MiniApp FAQ
     const faqUrl = process.env.WEBAPP_URL || 'https://37.57.209.201.nip.io/faq';
     
-    // Відправляємо повідомлення з посиланням на FAQ
-    await this.safeReply(
-      ctx, 
-      `📚 Детальна інформація про SkillKlan доступна в нашому FAQ:
-
-🔗 [Відкрити FAQ](${faqUrl})
-
-Тут ви знайдете відповіді на всі питання про:
-• Навчання та професії
-• Формат занять
-• Працевлаштування
-• Фінанси
-• Інструменти
-• Спільноту
-
-Після ознайомлення з FAQ, повертайтеся сюди для отримання тестового завдання! 🚀`,
-      { parse_mode: 'Markdown' }
-    );
+    // Відкриваємо MiniApp FAQ
+    await ctx.reply('📚 Відкриваю FAQ для вас...', {
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: '📚 Відкрити FAQ',
+            web_app: { url: faqUrl }
+          }
+        ]]
+      }
+    });
     
     // Підтверджуємо callback
     await ctx.answerCbQuery();

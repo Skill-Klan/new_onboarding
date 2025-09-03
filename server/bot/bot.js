@@ -16,7 +16,7 @@ const ReadyToTryHandler = require('./handlers/ReadyToTryHandler');
 const ContactHandler = require('./handlers/ContactHandler');
 const TaskHandler = require('./handlers/TaskHandler');
 const TaskSubmissionHandler = require('./handlers/TaskSubmissionHandler');
-const FAQHandler = require('./handlers/FAQHandler');
+
 const RestartHandler = require('./handlers/RestartHandler');
 const UnknownHandler = require('./handlers/UnknownHandler');
 
@@ -43,7 +43,7 @@ class SkillKlanBot {
     const contactHandler = new ContactHandler(this.userStateService, this.contactService, this.taskService);
     const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService);
     const taskSubmissionHandler = new TaskSubmissionHandler(this.userStateService, this.contactService, this.taskService);
-    const faqHandler = new FAQHandler(this.userStateService, this.contactService, this.taskService);
+
     const restartHandler = new RestartHandler(this.userStateService, this.contactService, this.taskService);
     const unknownHandler = new UnknownHandler(this.userStateService, this.contactService, this.taskService);
 
@@ -77,10 +77,7 @@ class SkillKlanBot {
       await taskSubmissionHandler.handle(ctx, userState);
     });
 
-    this.bot.action('show_faq', async (ctx) => {
-      const userState = await this.userStateService.getState(ctx.from.id);
-      await faqHandler.handle(ctx, userState);
-    });
+
 
     this.bot.action('restart', async (ctx) => {
       const userState = await this.userStateService.getState(ctx.from.id);

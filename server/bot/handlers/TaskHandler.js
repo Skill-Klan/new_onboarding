@@ -36,11 +36,15 @@ class TaskHandler extends BaseHandler {
       const filePath = this.taskService.getTaskFilePath(userState.selectedProfession);
       console.log('🔍🔍🔍 TaskHandler.execute: відправляємо файл =', filePath);
 
+      // Пауза 2.5 секунди перед відправкою файлу
+      console.log('🔍🔍🔍 TaskHandler.execute: пауза 2.5 секунди перед відправкою файлу');
+      await new Promise(resolve => setTimeout(resolve, 2500));
+
       // Відправляємо файл
       await ctx.replyWithDocument(
         { source: filePath },
         {
-          caption: `📋 ${taskInfo.title}\n\n${taskInfo.description}\n\n⏰ Термін виконання: ${taskInfo.deadline}\n\nУспіхів! 🚀`
+          caption: `📋 ${taskInfo.title}\n\n${taskInfo.description}\n\n⏰ Термін виконання: ${taskInfo.deadline}\n\nВіримо в тебе — вперед до перемоги! 🚀`
         }
       );
 

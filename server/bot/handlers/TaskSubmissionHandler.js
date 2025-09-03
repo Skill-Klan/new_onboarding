@@ -11,8 +11,7 @@ class TaskSubmissionHandler extends BaseHandler {
     // Відправляємо повідомлення про готовність менеджера
     await this.safeReply(
       ctx, 
-      MessageTemplates.getTaskSubmissionMessage(),
-      KeyboardTemplates.getMainMenuKeyboard()
+      MessageTemplates.getTaskSubmissionMessage()
     );
     
     // Підтверджуємо callback
