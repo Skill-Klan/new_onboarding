@@ -8,6 +8,8 @@ const DatabaseService = require('../shared/database/DatabaseService');
 const UserStateService = require('./services/UserStateService');
 const ContactService = require('./services/ContactService');
 const TaskService = require('./services/TaskService');
+const ReminderService = require('./services/ReminderService');
+const WebhookService = require('./services/WebhookService');
 
 // Імпорт обробників
 const StartHandler = require('./handlers/StartHandler');
@@ -27,6 +29,8 @@ class SkillKlanBot {
     this.userStateService = new UserStateService(this.databaseService);
     this.contactService = new ContactService(this.databaseService);
     this.taskService = new TaskService(this.databaseService);
+    this.webhookService = new WebhookService();
+    this.reminderService = new ReminderService(this.databaseService, this.bot, this.webhookService);
     
     this.setupHandlers();
     this.setupMiddleware();
@@ -37,15 +41,15 @@ class SkillKlanBot {
    */
   setupHandlers() {
     // Створюємо обробники
-    const startHandler = new StartHandler(this.userStateService, this.contactService, this.taskService);
-    const professionHandler = new ProfessionHandler(this.userStateService, this.contactService, this.taskService);
-    const readyToTryHandler = new ReadyToTryHandler(this.userStateService, this.contactService, this.taskService);
-    const contactHandler = new ContactHandler(this.userStateService, this.contactService, this.taskService);
-    const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService);
-    const taskSubmissionHandler = new TaskSubmissionHandler(this.userStateService, this.contactService, this.taskService);
+    const startHandler = new StartHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+    const professionHandler = new ProfessionHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+    const readyToTryHandler = new ReadyToTryHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+    const contactHandler = new ContactHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+    const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+    const taskSubmissionHandler = new TaskSubmissionHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
 
-    const restartHandler = new RestartHandler(this.userStateService, this.contactService, this.taskService);
-    const unknownHandler = new UnknownHandler(this.userStateService, this.contactService, this.taskService);
+    const restartHandler = new RestartHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+    const unknownHandler = new UnknownHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
 
     // Команда /start
     this.bot.start(async (ctx) => {

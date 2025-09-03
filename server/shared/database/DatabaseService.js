@@ -65,8 +65,8 @@ class DatabaseService {
       console.log('🔍🔍🔍 DatabaseService.saveUserState: зберігаємо стан користувача...');
       const stateQuery = `
         INSERT INTO bot_users (
-          telegram_id, username, current_step, selected_profession, contact_data, task_sent, last_activity, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          telegram_id, username, current_step, selected_profession, contact_data, task_sent, task_sent_at, task_deadline, reminders_sent, last_activity, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         ON CONFLICT (telegram_id) 
         DO UPDATE SET
           username = EXCLUDED.username,
@@ -74,6 +74,9 @@ class DatabaseService {
           selected_profession = EXCLUDED.selected_profession,
           contact_data = EXCLUDED.contact_data,
           task_sent = EXCLUDED.task_sent,
+          task_sent_at = EXCLUDED.task_sent_at,
+          task_deadline = EXCLUDED.task_deadline,
+          reminders_sent = EXCLUDED.reminders_sent,
           last_activity = EXCLUDED.last_activity,
           updated_at = EXCLUDED.updated_at
         RETURNING *
@@ -86,6 +89,9 @@ class DatabaseService {
         userState.selectedProfession || null,
         userState.contactData ? JSON.stringify(userState.contactData) : null,
         userState.taskSent || false,
+        userState.taskSentAt || null,
+        userState.taskDeadline || null,
+        userState.remindersSent ? JSON.stringify(userState.remindersSent) : '[]',
         userState.lastActivity || new Date(),
         userState.createdAt || new Date(),
         new Date()
@@ -234,6 +240,28 @@ class DatabaseService {
     } catch (error) {
       console.error('Помилка очищення застарілих станів:', error);
       return 0; // Повертаємо 0 замість кидання помилки
+    }
+  }
+
+  /**
+   * Отримати користувачів, яким відправлено завдання
+   */
+  async getUsersWithTasks() {
+    try {
+      const query = `
+        SELECT telegram_id, task_sent_at, task_deadline, reminders_sent
+        FROM bot_users 
+        WHERE task_sent = true 
+        AND task_sent_at IS NOT NULL
+        ORDER BY task_sent_at ASC
+      `;
+      
+      const result = await this.pool.query(query);
+      console.log('🔍🔍🔍 DatabaseService.getUsersWithTasks: знайдено користувачів =', result.rows.length);
+      return result.rows;
+    } catch (error) {
+      console.error('🔍🔍🔍 DatabaseService.getUsersWithTasks: помилка =', error);
+      return [];
     }
   }
 

@@ -4,6 +4,9 @@ const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class UnknownHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     const MessageTemplates = require('../templates/messages');
     const KeyboardTemplates = require('../templates/keyboards');

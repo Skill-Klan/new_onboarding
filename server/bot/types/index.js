@@ -31,6 +31,9 @@ class UserState {
     this.selectedProfession = null;
     this.contactData = null;
     this.taskSent = false;
+    this.taskSentAt = null; // Коли було відправлено завдання
+    this.taskDeadline = null; // Дедлайн завдання (9 робочих днів)
+    this.remindersSent = []; // Які нагадування вже відправлені
     this.lastActivity = new Date();
     this.createdAt = new Date();
   }
@@ -52,7 +55,27 @@ class UserState {
 
   markTaskSent() {
     this.taskSent = true;
+    this.taskSentAt = new Date();
+    this.taskDeadline = this.calculateDeadline();
     this.lastActivity = new Date();
+  }
+
+  calculateDeadline() {
+    const sentDate = new Date(this.taskSentAt);
+    let deadline = new Date(sentDate);
+    let workingDays = 0;
+    
+    // Додаємо 9 робочих днів (без вихідних)
+    while (workingDays < 9) {
+      deadline.setDate(deadline.getDate() + 1);
+      const dayOfWeek = deadline.getDay();
+      // Пропускаємо суботу (6) та неділю (0)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workingDays++;
+      }
+    }
+    
+    return deadline;
   }
 
   toJSON() {
@@ -64,6 +87,9 @@ class UserState {
       selectedProfession: this.selectedProfession,
       contactData: this.contactData,
       taskSent: this.taskSent,
+      taskSentAt: this.taskSentAt,
+      taskDeadline: this.taskDeadline,
+      remindersSent: this.remindersSent,
       lastActivity: this.lastActivity,
       createdAt: this.createdAt
     };
@@ -86,6 +112,23 @@ class UserState {
     }
     
     state.taskSent = data.task_sent || false;
+    state.taskSentAt = data.task_sent_at ? new Date(data.task_sent_at) : null;
+    state.taskDeadline = data.task_deadline ? new Date(data.task_deadline) : null;
+    // Безпечний парсинг reminders_sent
+    if (data.reminders_sent) {
+      if (typeof data.reminders_sent === 'string') {
+        try {
+          state.remindersSent = JSON.parse(data.reminders_sent);
+        } catch (error) {
+          console.error('🔍🔍🔍 UserState.fromJSON: помилка парсингу reminders_sent:', error);
+          state.remindersSent = [];
+        }
+      } else {
+        state.remindersSent = data.reminders_sent;
+      }
+    } else {
+      state.remindersSent = [];
+    }
     state.lastActivity = new Date(data.last_activity);
     state.createdAt = new Date(data.created_at);
     return state;

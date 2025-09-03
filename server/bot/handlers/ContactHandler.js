@@ -4,6 +4,9 @@ const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class ContactHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     console.log('🔍🔍🔍 ContactHandler.execute: ПОЧАТОК');
     console.log('🔍🔍🔍 ContactHandler.execute: userState =', userState);
@@ -39,6 +42,21 @@ class ContactHandler extends BaseHandler {
       console.log('🔍🔍🔍 ContactHandler.execute: оновлюємо стан користувача...');
       await this.userStateService.setContactData(userState.telegramId, contactData);
       console.log('🔍🔍🔍 ContactHandler.execute: стан користувача оновлено');
+      
+      // Відправляємо webhook про надання контакту
+      try {
+        const webhookData = {
+          telegramId: userState.telegramId,
+          username: userState.username,
+          firstName: contactData.firstName,
+          lastName: contactData.lastName
+        };
+        await this.webhookService.notifyContactProvided(webhookData, contactData);
+        console.log('✅ ContactHandler: Webhook про надання контакту відправлено');
+      } catch (webhookError) {
+        console.error('❌ ContactHandler: Помилка відправки webhook:', webhookError);
+        // Не зупиняємо виконання через помилку webhook
+      }
 
       // Відправляємо підтвердження та одразу завдання
       console.log('🔍🔍🔍 ContactHandler.execute: відправляємо підтвердження та завдання...');

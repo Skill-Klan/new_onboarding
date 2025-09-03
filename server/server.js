@@ -292,7 +292,12 @@ async function startServer() {
     if (process.env.TELEGRAM_BOT_TOKEN) {
       const bot = new SkillKlanBot();
       await bot.start();
+      
+      // Запускаємо cron job для нагадувань
+      bot.reminderService.startReminderCron();
+      
       console.log('🤖 Telegram bot запущено');
+      console.log('⏰ Cron job для нагадувань запущено');
     } else {
       console.log('⚠️ TELEGRAM_BOT_TOKEN не встановлено, бот не запущено');
     }

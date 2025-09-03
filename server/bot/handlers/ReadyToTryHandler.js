@@ -4,6 +4,9 @@ const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class ReadyToTryHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     console.log('🔍🔍🔍 ReadyToTryHandler.execute: ПОЧАТОК');
     console.log('🔍🔍🔍 ReadyToTryHandler.execute: userState =', userState);

@@ -4,6 +4,9 @@ const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class StartHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     try {
       console.log('🔍 StartHandler: Початок execute, userState =', userState);
@@ -19,10 +22,32 @@ class StartHandler extends BaseHandler {
       const userInfo = this.getUserInfo(ctx);
       console.log('✅ StartHandler: userInfo отримано:', userInfo);
       
-      // Оновлюємо інформацію про користувача в стані
+      // Оновлюємо інформацію про користувача в стані та зберігаємо в БД
       userState.username = userInfo.username;
       userState.userId = userInfo.id;
       console.log('✅ StartHandler: userState оновлено:', userState);
+      
+      // Зберігаємо оновлену інформацію в БД
+      await this.userStateService.updateState(userState.telegramId, {
+        username: userInfo.username,
+        userId: userInfo.id
+      });
+      console.log('✅ StartHandler: інформація користувача збережена в БД');
+      
+      // Відправляємо webhook про початок взаємодії
+      try {
+        const webhookData = {
+          telegramId: userState.telegramId,
+          username: userInfo.username,
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName
+        };
+        await this.webhookService.notifyUserStarted(webhookData);
+        console.log('✅ StartHandler: Webhook про початок взаємодії відправлено');
+      } catch (webhookError) {
+        console.error('❌ StartHandler: Помилка відправки webhook:', webhookError);
+        // Не зупиняємо виконання через помилку webhook
+      }
       
       // Отримуємо повідомлення та клавіатуру
       const welcomeMessage = MessageTemplates.getWelcomeMessage();
@@ -56,6 +81,19 @@ class StartHandler extends BaseHandler {
 
   getNextStep() {
     return BotStep.PROFESSION_SELECTION;
+  }
+
+  /**
+   * Отримати інформацію про користувача з контексту
+   */
+  getUserInfo(ctx) {
+    const from = ctx.from;
+    return {
+      id: from.id,
+      username: from.username || null,
+      firstName: from.first_name || null,
+      lastName: from.last_name || null
+    };
   }
 }
 

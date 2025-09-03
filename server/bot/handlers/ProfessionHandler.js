@@ -6,6 +6,9 @@ const MessageTemplates = require('../templates/messages');
 const KeyboardTemplates = require('../templates/keyboards');
 
 class ProfessionHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     console.log('🔍🔍🔍 ProfessionHandler.execute: ПОЧАТОК');
     console.log('🔍🔍🔍 ProfessionHandler.execute: ctx.callbackQuery.data =', ctx.callbackQuery?.data);
@@ -32,11 +35,21 @@ class ProfessionHandler extends BaseHandler {
     
     // Відправляємо опис професії
     const description = this.getProfessionDescription(profession);
-    await this.safeReply(
-      ctx, 
-      description,
-      KeyboardTemplates.getReadyToTryKeyboard()
-    );
+    console.log('🔍🔍🔍 ProfessionHandler.execute: description =', description);
+    console.log('🔍🔍🔍 ProfessionHandler.execute: KeyboardTemplates =', typeof KeyboardTemplates);
+    console.log('🔍🔍🔍 ProfessionHandler.execute: getReadyToTryKeyboard =', typeof KeyboardTemplates?.getReadyToTryKeyboard);
+    
+    try {
+      await this.safeReply(
+        ctx, 
+        description,
+        KeyboardTemplates.getReadyToTryKeyboard()
+      );
+      console.log('🔍🔍🔍 ProfessionHandler.execute: повідомлення відправлено успішно');
+    } catch (error) {
+      console.error('🔍🔍🔍 ProfessionHandler.execute: ПОМИЛКА відправки повідомлення =', error);
+      throw error;
+    }
     
     // Підтверджуємо callback
     await ctx.answerCbQuery();

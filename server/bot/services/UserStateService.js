@@ -118,10 +118,35 @@ class UserStateService {
    * Позначити завдання як відправлене
    */
   async markTaskSent(telegramId) {
+    const now = new Date();
+    const deadline = this.calculateDeadline(now);
+    
     return this.updateState(telegramId, { 
       taskSent: true,
+      taskSentAt: now,
+      taskDeadline: deadline,
       currentStep: BotStep.COMPLETED
     });
+  }
+
+  /**
+   * Розрахувати дедлайн (9 робочих днів)
+   */
+  calculateDeadline(sentDate) {
+    let deadline = new Date(sentDate);
+    let workingDays = 0;
+    
+    // Додаємо 9 робочих днів (без вихідних)
+    while (workingDays < 9) {
+      deadline.setDate(deadline.getDate() + 1);
+      const dayOfWeek = deadline.getDay();
+      // Пропускаємо суботу (6) та неділю (0)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workingDays++;
+      }
+    }
+    
+    return deadline;
   }
 
   /**

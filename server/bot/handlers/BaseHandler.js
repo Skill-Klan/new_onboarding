@@ -3,10 +3,11 @@
 const { BotStep } = require('../types');
 
 class BaseHandler {
-  constructor(userStateService, contactService, taskService) {
+  constructor(userStateService, contactService, taskService, webhookService = null) {
     this.userStateService = userStateService;
     this.contactService = contactService;
     this.taskService = taskService;
+    this.webhookService = webhookService;
   }
 
   /**
@@ -109,12 +110,22 @@ class BaseHandler {
     console.log('🔍🔍🔍 BaseHandler.handleError: error =', error);
     console.log('🔍🔍🔍 BaseHandler.handleError: ctx =', ctx);
     
-    const MessageTemplates = require('../templates/messages');
-    console.log('🔍🔍🔍 BaseHandler.handleError: MessageTemplates =', typeof MessageTemplates);
-    console.log('🔍🔍🔍 BaseHandler.handleError: getErrorMessage =', typeof MessageTemplates?.getErrorMessage);
-    
-    await ctx.reply(MessageTemplates.getErrorMessage());
-    console.log('🔍🔍🔍 BaseHandler.handleError: Повідомлення відправлено');
+    try {
+      const MessageTemplates = require('../templates/messages');
+      console.log('🔍🔍🔍 BaseHandler.handleError: MessageTemplates =', typeof MessageTemplates);
+      console.log('🔍🔍🔍 BaseHandler.handleError: getErrorMessage =', typeof MessageTemplates?.getErrorMessage);
+      
+      await ctx.reply(MessageTemplates.getErrorMessage());
+      console.log('🔍🔍🔍 BaseHandler.handleError: Повідомлення відправлено');
+    } catch (replyError) {
+      console.error('🔍🔍🔍 BaseHandler.handleError: Помилка відправки повідомлення:', replyError);
+      // Fallback повідомлення
+      try {
+        await ctx.reply('Вибачте, сталася помилка 😔 Спробуйте ще раз або напишіть /start для початку.');
+      } catch (fallbackError) {
+        console.error('🔍🔍🔍 BaseHandler.handleError: Помилка fallback повідомлення:', fallbackError);
+      }
+    }
   }
 
   /**

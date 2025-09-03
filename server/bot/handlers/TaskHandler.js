@@ -4,6 +4,9 @@ const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class TaskHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     console.log('🔍🔍🔍 TaskHandler.execute: ПОЧАТОК');
     console.log('🔍🔍🔍 TaskHandler.execute: userState =', userState);
@@ -53,6 +56,21 @@ class TaskHandler extends BaseHandler {
       // Оновлюємо стан користувача
       await this.userStateService.markTaskSent(userState.telegramId);
       console.log('🔍🔍🔍 TaskHandler.execute: стан користувача оновлено');
+      
+      // Відправляємо webhook про відправку завдання
+      try {
+        const updatedUserState = await this.userStateService.getState(userState.telegramId);
+        const taskData = {
+          profession: userState.selectedProfession,
+          title: taskInfo.title,
+          deadline: taskInfo.deadline
+        };
+        await this.webhookService.notifyTaskSent(updatedUserState, taskData);
+        console.log('✅ TaskHandler: Webhook про відправку завдання відправлено');
+      } catch (webhookError) {
+        console.error('❌ TaskHandler: Помилка відправки webhook:', webhookError);
+        // Не зупиняємо виконання через помилку webhook
+      }
 
       // Відправляємо повідомлення з кнопкою через 10 секунд
       console.log('🔍🔍🔍 TaskHandler.execute: плануємо відправку кнопки через 10 секунд');

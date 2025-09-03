@@ -4,6 +4,9 @@ const BaseHandler = require('./BaseHandler');
 const { BotStep } = require('../types');
 
 class TaskSubmissionHandler extends BaseHandler {
+  constructor(userStateService, contactService, taskService, webhookService) {
+    super(userStateService, contactService, taskService, webhookService);
+  }
   async execute(ctx, userState) {
     const MessageTemplates = require('../templates/messages');
     const KeyboardTemplates = require('../templates/keyboards');
@@ -19,6 +22,15 @@ class TaskSubmissionHandler extends BaseHandler {
 
     // Логуємо здачу завдання
     console.log(`Користувач ${userState.telegramId} готовий здати завдання для професії ${userState.selectedProfession}`);
+
+    // Відправляємо webhook про завершення завдання
+    try {
+      await this.webhookService.notifyTaskCompleted(userState);
+      console.log('✅ TaskSubmissionHandler: Webhook про завершення завдання відправлено');
+    } catch (webhookError) {
+      console.error('❌ TaskSubmissionHandler: Помилка відправки webhook:', webhookError);
+      // Не зупиняємо виконання через помилку webhook
+    }
 
     // Тут можна додати логіку для сповіщення менеджера
     await this.notifyManager(userState);
