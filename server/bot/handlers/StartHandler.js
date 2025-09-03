@@ -6,12 +6,13 @@ const { BotStep } = require('../types');
 class StartHandler extends BaseHandler {
   async execute(ctx, userState) {
     try {
+      console.log('🔍 StartHandler: Початок execute, userState =', userState);
       console.log('🚀 StartHandler: Початок виконання');
       
-      const { MessageTemplates } = require('../templates/messages');
+      const MessageTemplates = require('../templates/messages');
       console.log('✅ StartHandler: MessageTemplates завантажено');
       
-      const { KeyboardTemplates } = require('../templates/keyboards');
+      const KeyboardTemplates = require('../templates/keyboards');
       console.log('✅ StartHandler: KeyboardTemplates завантажено');
       
       // Отримуємо інформацію про користувача
@@ -27,6 +28,7 @@ class StartHandler extends BaseHandler {
       const welcomeMessage = MessageTemplates.getWelcomeMessage();
       console.log('✅ StartHandler: welcomeMessage отримано:', welcomeMessage);
       
+      console.log('🔍 StartHandler: Отримуємо professionKeyboard');
       const professionKeyboard = KeyboardTemplates.getProfessionKeyboard();
       console.log('✅ StartHandler: professionKeyboard отримано:', professionKeyboard);
       

@@ -5,7 +5,7 @@ const { BotStep } = require('../types');
 
 class TaskHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
+    const MessageTemplates = require('../templates/messages');
     
     // Перевіряємо, чи є всі необхідні дані
     if (!userState.selectedProfession || !userState.contactData) {

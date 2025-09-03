@@ -5,8 +5,8 @@ const { BotStep } = require('../types');
 
 class UnknownHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    const MessageTemplates = require('../templates/messages');
+    const KeyboardTemplates = require('../templates/keyboards');
     
     // Визначаємо тип повідомлення
     const messageType = this.getMessageType(ctx);
@@ -40,8 +40,8 @@ class UnknownHandler extends BaseHandler {
    * Обробка текстового повідомлення
    */
   async handleTextMessage(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    const MessageTemplates = require('../templates/messages');
+    const KeyboardTemplates = require('../templates/keyboards');
     
     const messageText = ctx.message.text.toLowerCase();
     
@@ -72,7 +72,7 @@ class UnknownHandler extends BaseHandler {
    * Обробка callback запиту
    */
   async handleCallbackQuery(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
+    const MessageTemplates = require('../templates/messages');
     
     // Підтверджуємо callback
     await ctx.answerCbQuery('Команда не розпізнана');

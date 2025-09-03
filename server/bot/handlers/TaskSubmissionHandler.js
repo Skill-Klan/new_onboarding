@@ -5,8 +5,8 @@ const { BotStep } = require('../types');
 
 class TaskSubmissionHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    const MessageTemplates = require('../templates/messages');
+    const KeyboardTemplates = require('../templates/keyboards');
     
     // Відправляємо повідомлення про готовність менеджера
     await this.safeReply(

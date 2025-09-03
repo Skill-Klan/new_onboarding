@@ -14,17 +14,21 @@ class BaseHandler {
    */
   async handle(ctx, userState) {
     try {
+      console.log('🔍 BaseHandler: Початок handle, userState =', userState);
       // Логування вхідного запиту
       this.logRequest(ctx, userState);
       
       // Валідація стану
       if (!this.validateState(userState)) {
+        console.log('🔍 BaseHandler: Невалідний стан, викликаємо handleInvalidState');
         await this.handleInvalidState(ctx, userState);
         return;
       }
 
       // Виконання логіки обробника
+      console.log('🔍 BaseHandler: Викликаємо execute');
       await this.execute(ctx, userState);
+      console.log('🔍 BaseHandler: execute завершено, викликаємо updateUserState');
       
       // Оновлення стану
       await this.updateUserState(ctx, userState);
@@ -60,8 +64,16 @@ class BaseHandler {
    * Обробка невалідного стану
    */
   async handleInvalidState(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
+    console.log('🔍🔍🔍 BaseHandler.handleInvalidState: ПОЧАТОК');
+    console.log('🔍🔍🔍 BaseHandler.handleInvalidState: ctx =', ctx);
+    console.log('🔍🔍🔍 BaseHandler.handleInvalidState: userState =', userState);
+    
+    const MessageTemplates = require('../templates/messages');
+    console.log('🔍🔍🔍 BaseHandler.handleInvalidState: MessageTemplates =', typeof MessageTemplates);
+    console.log('🔍🔍🔍 BaseHandler.handleInvalidState: getErrorMessage =', typeof MessageTemplates?.getErrorMessage);
+    
     await ctx.reply(MessageTemplates.getErrorMessage());
+    console.log('🔍🔍🔍 BaseHandler.handleInvalidState: Повідомлення відправлено');
     
     // Скидаємо стан користувача
     await this.userStateService.resetState(userState.telegramId);
@@ -71,18 +83,38 @@ class BaseHandler {
    * Оновлення стану користувача
    */
   async updateUserState(ctx, userState) {
+    console.log('🔍🔍🔍 BaseHandler.updateUserState: ПОЧАТОК');
+    console.log('🔍🔍🔍 BaseHandler.updateUserState: userState =', userState);
+    
     const nextStep = this.getNextStep();
+    console.log('🔍🔍🔍 BaseHandler.updateUserState: nextStep =', nextStep);
+    console.log('🔍🔍🔍 BaseHandler.updateUserState: userState.currentStep =', userState.currentStep);
+    
     if (nextStep && nextStep !== userState.currentStep) {
+      console.log('🔍🔍🔍 BaseHandler.updateUserState: оновлюємо крок...');
       await this.userStateService.updateStep(userState.telegramId, nextStep);
+    } else {
+      console.log('🔍🔍🔍 BaseHandler.updateUserState: крок не потрібно оновлювати');
     }
+    
+    // Кеш видалено - кожен запит йде безпосередньо в БД
+    console.log('🔍🔍🔍 BaseHandler.updateUserState: кеш видалено, дані завжди свіжі з БД');
   }
 
   /**
    * Обробка помилок
    */
   async handleError(ctx, error) {
-    const { MessageTemplates } = require('../templates/messages');
+    console.log('🔍🔍🔍 BaseHandler.handleError: ПОЧАТОК');
+    console.log('🔍🔍🔍 BaseHandler.handleError: error =', error);
+    console.log('🔍🔍🔍 BaseHandler.handleError: ctx =', ctx);
+    
+    const MessageTemplates = require('../templates/messages');
+    console.log('🔍🔍🔍 BaseHandler.handleError: MessageTemplates =', typeof MessageTemplates);
+    console.log('🔍🔍🔍 BaseHandler.handleError: getErrorMessage =', typeof MessageTemplates?.getErrorMessage);
+    
     await ctx.reply(MessageTemplates.getErrorMessage());
+    console.log('🔍🔍🔍 BaseHandler.handleError: Повідомлення відправлено');
   }
 
   /**

@@ -70,13 +70,13 @@ class UserState {
   }
 
   static fromJSON(data) {
-    const state = new UserState(data.userId, data.telegramId, data.username);
-    state.currentStep = data.currentStep || BotStep.START;
-    state.selectedProfession = data.selectedProfession;
-    state.contactData = data.contactData;
-    state.taskSent = data.taskSent || false;
-    state.lastActivity = new Date(data.lastActivity);
-    state.createdAt = new Date(data.createdAt);
+    const state = new UserState(data.id, data.telegram_id, data.username);
+    state.currentStep = data.current_step || BotStep.START;
+    state.selectedProfession = data.selected_profession;
+    state.contactData = data.contact_data ? JSON.parse(data.contact_data) : null;
+    state.taskSent = data.task_sent || false;
+    state.lastActivity = new Date(data.last_activity);
+    state.createdAt = new Date(data.created_at);
     return state;
   }
 }

@@ -4,7 +4,7 @@ const BaseHandler = require('./BaseHandler');
 
 class FAQHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    const KeyboardTemplates = require('../templates/keyboards');
     
     // URL до WebApp FAQ
     const faqUrl = process.env.WEBAPP_URL || 'https://37.57.209.201.nip.io/faq';

@@ -5,8 +5,8 @@ const { BotStep } = require('../types');
 
 class RestartHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    const MessageTemplates = require('../templates/messages');
+    const KeyboardTemplates = require('../templates/keyboards');
     
     // Скидаємо стан користувача
     await this.userStateService.resetState(userState.telegramId);

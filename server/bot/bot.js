@@ -49,7 +49,10 @@ class SkillKlanBot {
 
     // Команда /start
     this.bot.start(async (ctx) => {
+      console.log('🔍 bot.js: Отримуємо userState для', ctx.from.id);
       const userState = await this.userStateService.getState(ctx.from.id);
+      console.log('🔍 bot.js: userState =', userState);
+      console.log('🔍 bot.js: Викликаємо startHandler.handle');
       await startHandler.handle(ctx, userState);
     });
 

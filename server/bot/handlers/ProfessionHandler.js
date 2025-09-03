@@ -2,14 +2,18 @@
 
 const BaseHandler = require('./BaseHandler');
 const { BotStep, Profession } = require('../types');
+const MessageTemplates = require('../templates/messages');
+const KeyboardTemplates = require('../templates/keyboards');
 
 class ProfessionHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    console.log('🔍🔍🔍 ProfessionHandler.execute: ПОЧАТОК');
+    console.log('🔍🔍🔍 ProfessionHandler.execute: ctx.callbackQuery.data =', ctx.callbackQuery?.data);
+    console.log('🔍🔍🔍 ProfessionHandler.execute: userState =', userState);
     
     // Отримуємо вибрану професію з callback_data
     const profession = this.extractProfession(ctx.callbackQuery.data);
+    console.log('🔍🔍🔍 ProfessionHandler.execute: profession =', profession);
     
     if (!profession) {
       await this.safeReply(ctx, MessageTemplates.getErrorMessage());
@@ -17,7 +21,14 @@ class ProfessionHandler extends BaseHandler {
     }
 
     // Оновлюємо стан користувача
-    await this.userStateService.setProfession(userState.telegramId, profession);
+    console.log('🔍🔍🔍 ProfessionHandler.execute: оновлюємо стан користувача...');
+    try {
+      await this.userStateService.setProfession(userState.telegramId, profession);
+      console.log('🔍🔍🔍 ProfessionHandler.execute: стан користувача оновлено успішно');
+    } catch (error) {
+      console.error('🔍🔍🔍 ProfessionHandler.execute: ПОМИЛКА при оновленні стану =', error);
+      throw error;
+    }
     
     // Відправляємо опис професії
     const description = this.getProfessionDescription(profession);
@@ -47,12 +58,18 @@ class ProfessionHandler extends BaseHandler {
    * Отримання опису професії
    */
   getProfessionDescription(profession) {
-    const { MessageTemplates } = require('../templates/messages');
+    console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: ПОЧАТОК');
+    console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: profession =', profession);
+    console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: MessageTemplates =', typeof MessageTemplates);
+    console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: getQADescription =', typeof MessageTemplates?.getQADescription);
+    console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: getBADescription =', typeof MessageTemplates?.getBADescription);
     
     switch (profession) {
       case Profession.QA:
+        console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: Вибрано QA');
         return MessageTemplates.getQADescription();
       case Profession.BA:
+        console.log('🔍🔍🔍 ProfessionHandler.getProfessionDescription: Вибрано BA');
         return MessageTemplates.getBADescription();
       default:
         return MessageTemplates.getErrorMessage();
@@ -60,15 +77,28 @@ class ProfessionHandler extends BaseHandler {
   }
 
   getNextStep() {
-    return BotStep.CONTACT_REQUEST;
+    // Не оновлюємо крок автоматично, бо це робиться в setProfession
+    return null;
   }
 
   /**
    * Валідація стану для цього обробника
+   * Дозволяємо зміну професії на будь-якому кроці
    */
   validateState(userState) {
-    return super.validateState(userState) && 
-           userState.currentStep === BotStep.PROFESSION_SELECTION;
+    console.log('🔍🔍🔍 ProfessionHandler.validateState: ПОЧАТОК');
+    console.log('🔍🔍🔍 ProfessionHandler.validateState: userState =', userState);
+    console.log('🔍🔍🔍 ProfessionHandler.validateState: userState.currentStep =', userState?.currentStep);
+    
+    const superValid = super.validateState(userState);
+    // Дозволяємо зміну професії на будь-якому кроці, крім завершеного
+    const stepValid = userState.currentStep !== BotStep.COMPLETED;
+    
+    console.log('🔍🔍🔍 ProfessionHandler.validateState: superValid =', superValid);
+    console.log('🔍🔍🔍 ProfessionHandler.validateState: stepValid =', stepValid);
+    console.log('🔍🔍🔍 ProfessionHandler.validateState: загальний результат =', superValid && stepValid);
+    
+    return superValid && stepValid;
   }
 }
 

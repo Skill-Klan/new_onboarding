@@ -5,8 +5,8 @@ const { BotStep } = require('../types');
 
 class ContactHandler extends BaseHandler {
   async execute(ctx, userState) {
-    const { MessageTemplates } = require('../templates/messages');
-    const { KeyboardTemplates } = require('../templates/keyboards');
+    const MessageTemplates = require('../templates/messages');
+    const KeyboardTemplates = require('../templates/keyboards');
     
     // Перевіряємо, чи є контакт в повідомленні
     if (!ctx.message || !ctx.message.contact) {

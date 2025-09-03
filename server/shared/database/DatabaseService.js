@@ -18,15 +18,20 @@ class DatabaseService {
    * Отримання користувача за Telegram ID
    */
   async getUserByTelegramId(telegramId) {
+    console.log('🔍🔍🔍 DatabaseService.getUserByTelegramId: ПОЧАТОК');
+    console.log('🔍🔍🔍 DatabaseService.getUserByTelegramId: telegramId =', telegramId);
+    
     try {
       const query = `
-        SELECT * FROM users 
+        SELECT * FROM bot_users 
         WHERE telegram_id = $1
       `;
+      console.log('🔍🔍🔍 DatabaseService.getUserByTelegramId: виконуємо запит...');
       const result = await this.pool.query(query, [telegramId]);
+      console.log('🔍🔍🔍 DatabaseService.getUserByTelegramId: результат запиту =', result.rows);
       return result.rows[0] || null;
     } catch (error) {
-      console.error('Помилка отримання користувача:', error);
+      console.error('🔍🔍🔍 DatabaseService.getUserByTelegramId: ПОМИЛКА =', error);
       return null; // Не кидаємо помилку
     }
   }
@@ -37,10 +42,8 @@ class DatabaseService {
   async getUserState(telegramId) {
     try {
       const query = `
-        SELECT u.*, us.current_step, us.data, us.updated_at as state_updated_at
-        FROM users u
-        LEFT JOIN user_states us ON u.id = us.user_id
-        WHERE u.telegram_id = $1
+        SELECT * FROM bot_users 
+        WHERE telegram_id = $1
       `;
       const result = await this.pool.query(query, [telegramId]);
       return result.rows[0] || null;
@@ -54,60 +57,45 @@ class DatabaseService {
    * Збереження стану користувача
    */
   async saveUserState(userState) {
+    console.log('🔍🔍🔍 DatabaseService.saveUserState: ПОЧАТОК');
+    console.log('🔍🔍🔍 DatabaseService.saveUserState: userState =', userState);
+    
     try {
-      // Спочатку створюємо/оновлюємо користувача в таблиці users
-      const userQuery = `
-        INSERT INTO users (
-          telegram_id, username, name, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5)
+      // Зберігаємо стан користувача в таблиці bot_users
+      console.log('🔍🔍🔍 DatabaseService.saveUserState: зберігаємо стан користувача...');
+      const stateQuery = `
+        INSERT INTO bot_users (
+          telegram_id, username, current_step, selected_profession, contact_data, task_sent, last_activity, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (telegram_id) 
         DO UPDATE SET
           username = EXCLUDED.username,
-          name = EXCLUDED.name,
-          updated_at = EXCLUDED.updated_at
-        RETURNING id
-      `;
-      
-      const userValues = [
-        userState.telegramId,
-        userState.username,
-        userState.username, // name = username
-        new Date(),
-        new Date()
-      ];
-
-      const userResult = await this.pool.query(userQuery, userValues);
-      const userId = userResult.rows[0].id;
-
-      // Тепер зберігаємо стан в таблиці user_states
-      const stateQuery = `
-        INSERT INTO user_states (
-          user_id, current_step, data, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (user_id) 
-        DO UPDATE SET
           current_step = EXCLUDED.current_step,
-          data = EXCLUDED.data,
+          selected_profession = EXCLUDED.selected_profession,
+          contact_data = EXCLUDED.contact_data,
+          task_sent = EXCLUDED.task_sent,
+          last_activity = EXCLUDED.last_activity,
           updated_at = EXCLUDED.updated_at
         RETURNING *
       `;
       
       const stateValues = [
-        userId,
+        userState.telegramId,
+        userState.username || null,
         userState.currentStep,
-        JSON.stringify({
-          selectedProfession: userState.selectedProfession,
-          contactData: userState.contactData,
-          taskSent: userState.taskSent
-        }),
-        new Date(),
+        userState.selectedProfession || null,
+        userState.contactData ? JSON.stringify(userState.contactData) : null,
+        userState.taskSent || false,
+        userState.lastActivity || new Date(),
+        userState.createdAt || new Date(),
         new Date()
       ];
 
       const stateResult = await this.pool.query(stateQuery, stateValues);
-      return { ...stateResult.rows[0], userId };
+      console.log('🔍🔍🔍 DatabaseService.saveUserState: стан збережено, result =', stateResult.rows[0]);
+      return stateResult.rows[0];
     } catch (error) {
-      console.error('Помилка збереження стану користувача:', error);
+      console.error('🔍🔍🔍 DatabaseService.saveUserState: ПОМИЛКА =', error);
       // Не кидаємо помилку, щоб бот продовжував працювати
       return null;
     }
