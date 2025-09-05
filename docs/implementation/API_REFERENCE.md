@@ -1,474 +1,460 @@
-# API Reference - SkillKlan Bot
+# API Reference - SkillKlan Telegram Bot
 
 ## 📋 Зміст
 
-1. [Bot Commands](#bot-commands)
-2. [Handlers](#handlers)
-3. [Services](#services)
-4. [Database Schema](#database-schema)
-5. [Message Templates](#message-templates)
-6. [Keyboard Templates](#keyboard-templates)
-7. [Types](#types)
+1. [WebhookService API](#webhookservice-api)
+2. [ReminderService API](#reminderservice-api)
+3. [UserStateService API](#userstateservice-api)
+4. [ContactService API](#contactservice-api)
+5. [TaskService API](#taskservice-api)
+6. [DatabaseService API](#databaseservice-api)
+7. [Discord Webhook Format](#discord-webhook-format)
 
-## 🤖 Bot Commands
+## 🔗 WebhookService API
 
-### /start
-**Призначення:** Початкове привітання та запуск онбордингу
-**Обробник:** `StartHandler`
-**Крок:** `start` → `profession_selection`
-
-**Повідомлення:**
-```
-Привіт! 👋
-
-Я бот SkillKlan — допоможу тобі знайти роботу мрії в IT.
-
-Обери напрямок, який тебе цікавить:
-```
-
-**Клавіатура:** Вибір професії (QA/BA) + FAQ
-
-### /help
-**Призначення:** Допомога користувачу
-**Обробник:** `UnknownHandler`
-**Повідомлення:** Стандартне повідомлення про помилку
-
-## 🎮 Handlers
-
-### BaseHandler
-**Базовий клас для всіх обробників**
-
-#### Методи:
+### Конструктор
 ```javascript
-async handle(ctx, userState)
-async execute(ctx, userState)
-validateState(userState)
-getNextStep()
-async updateUserState(ctx, userState)
-async safeReply(ctx, message, keyboard)
-async handleInvalidState(ctx, userState)
-async handleError(ctx, error)
-logRequest(ctx, userState)
+const webhookService = new WebhookService();
 ```
 
-#### Параметри:
-- `ctx` - Telegraf контекст
-- `userState` - Стан користувача
+### Методи
 
-### StartHandler
-**Обробник команди /start**
+#### `sendMessage(embed)`
+Відправляє повідомлення в Discord через webhook.
 
-#### Валідація:
+**Параметри:**
+- `embed` (Object) - Discord embed об'єкт
+
+**Повертає:** `Promise<boolean>`
+
+**Приклад:**
 ```javascript
-validateState(userState) {
-  return super.validateState(userState) && 
-         userState.currentStep === BotStep.START;
-}
+const embed = {
+  title: 'Тестове повідомлення',
+  color: 0x3498db,
+  fields: [...]
+};
+await webhookService.sendMessage(embed);
 ```
 
-#### Наступний крок:
+#### `notifyUserStarted(userData)`
+Відправляє повідомлення про початок взаємодії з ботом.
+
+**Параметри:**
+- `userData` (Object) - Дані користувача
+  - `telegramId` (string) - Telegram ID
+  - `username` (string) - Username
+  - `firstName` (string) - Ім'я
+  - `lastName` (string) - Прізвище
+
+**Повертає:** `Promise<boolean>`
+
+#### `notifyUserReady(userData)`
+Відправляє повідомлення про готовність користувача спробувати (кнопка "Так хочу спробувати").
+
+**Параметри:**
+- `userData` (Object) - Дані користувача
+  - `telegramId` (string) - Telegram ID
+  - `username` (string) - Username
+  - `firstName` (string) - Ім'я
+  - `lastName` (string) - Прізвище
+  - `selectedProfession` (string) - Вибрана професія (QA/BA)
+
+**Повертає:** `Promise<boolean>`
+
+#### `notifyContactProvided(userData, contactData)`
+Відправляє повідомлення про надання контакту.
+
+**Параметри:**
+- `userData` (Object) - Дані користувача
+- `contactData` (Object) - Контактні дані
+  - `phoneNumber` (string) - Номер телефону
+  - `firstName` (string) - Ім'я
+  - `lastName` (string) - Прізвище
+
+**Повертає:** `Promise<boolean>`
+
+#### `notifyTaskSent(userData, taskData)`
+Відправляє повідомлення про відправку завдання.
+
+**Параметри:**
+- `userData` (Object) - Дані користувача з `taskSentAt` та `taskDeadline`
+- `taskData` (Object) - Дані завдання
+  - `profession` (string) - Професія
+  - `title` (string) - Назва завдання
+  - `deadline` (string) - Термін виконання
+
+**Повертає:** `Promise<boolean>`
+
+#### `notifyTaskCompleted(userData)`
+Відправляє повідомлення про завершення завдання з розрахунком часу виконання.
+
+**Параметри:**
+- `userData` (Object) - Дані користувача з `taskSentAt`
+
+**Повертає:** `Promise<boolean>`
+
+#### `notifyDeadlineWarning(userData)`
+Відправляє повідомлення про попередження дедлайну (7-й день).
+
+**Параметри:**
+- `userData` (Object) - Дані користувача
+
+**Повертає:** `Promise<boolean>`
+
+#### `notifyDeadlineToday(userData)`
+Відправляє критичне повідомлення про останній день дедлайну.
+
+**Параметри:**
+- `userData` (Object) - Дані користувача
+
+**Повертає:** `Promise<boolean>`
+
+### Кольори
 ```javascript
-getNextStep() {
-  return BotStep.PROFESSION_SELECTION;
-}
-```
-
-### ProfessionHandler
-**Обробник вибору професії**
-
-#### Callback дані:
-- `profession_QA` - Вибір QA
-- `profession_BA` - Вибір BA
-
-#### Валідація:
-```javascript
-validateState(userState) {
-  return super.validateState(userState) && 
-         userState.currentStep === BotStep.PROFESSION_SELECTION;
-}
-```
-
-#### Наступний крок:
-```javascript
-getNextStep() {
-  return null; // Не оновлюємо автоматично
-}
-```
-
-### ReadyToTryHandler
-**Обробник кнопки "Я готовий спробувати"**
-
-#### Логіка:
-1. Перевіряє наявність контакту
-2. Якщо є → одразу відправляє завдання
-3. Якщо немає → просить контакт
-
-#### Валідація:
-```javascript
-validateState(userState) {
-  return super.validateState(userState) && 
-         userState.currentStep === BotStep.PROFESSION_SELECTION &&
-         !!userState.selectedProfession;
-}
-```
-
-### ContactHandler
-**Обробник контактних даних**
-
-#### Валідація:
-```javascript
-validateState(userState) {
-  return super.validateState(userState) && 
-         userState.currentStep === BotStep.CONTACT_REQUEST &&
-         userState.selectedProfession;
-}
-```
-
-#### Наступний крок:
-```javascript
-getNextStep() {
-  return BotStep.TASK_DELIVERY;
-}
-```
-
-### TaskHandler
-**Обробник відправки PDF завдань**
-
-#### Функції:
-- Відправка відповідного PDF (QA/BA)
-- Автоматична кнопка через 10 секунд
-
-#### Валідація:
-```javascript
-validateState(userState) {
-  return super.validateState(userState) && 
-         userState.currentStep === BotStep.TASK_DELIVERY &&
-         !!userState.selectedProfession;
-}
-```
-
-### TaskSubmissionHandler
-**Обробник здачі завдання**
-
-#### Callback дані:
-- `submit_task` - Готовність здати завдання
-
-#### Валідація:
-```javascript
-validateState(userState) {
-  return super.validateState(userState) && 
-         userState.taskSent === true;
-}
-```
-
-## 🔧 Services
-
-### UserStateService
-**Управління станом користувача**
-
-#### Методи:
-```javascript
-async getState(telegramId)
-async updateState(telegramId, updates)
-async updateStep(telegramId, step)
-async setProfession(telegramId, profession)
-async setContactData(telegramId, contactData)
-async markTaskSent(telegramId)
-async resetState(telegramId)
-async cleanupOldStates()
-```
-
-#### Особливості:
-- Без кешування
-- Кожен запит йде в БД
-- Автоматичне оновлення `lastActivity`
-
-### ContactService
-**Робота з контактами**
-
-#### Методи:
-```javascript
-validateContact(contact)
-convertTelegramContact(telegramContact)
-async saveContact(userId, contactData)
-async getContactByUserId(userId)
-async hasContact(userId)
-formatPhoneNumber(phoneNumber)
-maskPhoneNumber(phoneNumber)
-```
-
-#### Валідація контакту:
-- Наявність номера телефону
-- Наявність імені
-- Формат номера телефону
-
-### TaskService
-**Робота з PDF завданнями**
-
-#### Методи:
-```javascript
-getTaskFilePath(profession)
-async taskFileExists(profession)
-getTaskInfo(profession)
-```
-
-#### Підтримувані професії:
-- `QA` - Тестове завдання для QA
-- `BA` - Тестове завдання для BA
-
-## 🗄️ Database Schema
-
-### bot_users
-**Основна таблиця користувачів**
-
-```sql
-CREATE TABLE bot_users (
-  id SERIAL PRIMARY KEY,
-  telegram_id VARCHAR(50) UNIQUE NOT NULL,
-  username VARCHAR(100),
-  current_step VARCHAR(50) DEFAULT 'start',
-  selected_profession VARCHAR(20),
-  contact_data JSONB,
-  task_sent BOOLEAN DEFAULT FALSE,
-  last_activity TIMESTAMP DEFAULT NOW(),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### Колонки:
-- `id` - Унікальний ідентифікатор
-- `telegram_id` - Telegram ID користувача
-- `username` - Telegram username
-- `current_step` - Поточний крок в онбордингу
-- `selected_profession` - Вибрана професія (QA/BA)
-- `contact_data` - Контактні дані (JSON)
-- `task_sent` - Чи відправлено завдання
-- `last_activity` - Остання активність
-- `created_at` - Дата створення
-- `updated_at` - Дата оновлення
-
-### bot_contacts
-**Контактні дані користувачів**
-
-```sql
-CREATE TABLE bot_contacts (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES bot_users(id),
-  phone_number VARCHAR(20) NOT NULL,
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### Колонки:
-- `id` - Унікальний ідентифікатор
-- `user_id` - Посилання на bot_users
-- `phone_number` - Номер телефону
-- `first_name` - Ім'я
-- `last_name` - Прізвище
-- `created_at` - Дата створення
-- `updated_at` - Дата оновлення
-
-## 💬 Message Templates
-
-### MessageTemplates
-**Шаблони повідомлень**
-
-#### Методи:
-```javascript
-static getWelcomeMessage()
-static getProfessionSelectionMessage()
-static getProfessionDescription(profession)
-static getContactRequestMessage()
-static getContactRequestRepeatMessage()
-static getContactConfirmationMessage()
-static getTaskDeliveryMessage()
-static getTaskSubmissionPromptMessage()
-static getTaskSubmissionMessage()
-static getCompletionMessage()
-static getErrorMessage()
-static getFAQMessage()
-static getRestartMessage()
-```
-
-#### Приклади повідомлень:
-
-**Привітання:**
-```
-Привіт! 👋
-
-Я бот SkillKlan — допоможу тобі знайти роботу мрії в IT.
-
-Обери напрямок, який тебе цікавить:
-```
-
-**Запит контакту:**
-```
-Супер! 🎯
-
-Щоб отримати тестове завдання, поділись своїм номером телефону.
-
-Це потрібно для зв'язку з ментором, який перевірятиме твоє завдання.
-
-Без цього кроку завдання не відкриється.
-```
-
-**Кнопка здачі завдання:**
-```
-Готовий здати тестове завдання? 📝
-
-Натисни кнопку нижче, коли будеш готовий надіслати результат.
-```
-
-## ⌨️ Keyboard Templates
-
-### KeyboardTemplates
-**Шаблони клавіатур**
-
-#### Методи:
-```javascript
-static getProfessionKeyboard()
-static getReadyToTryKeyboard()
-static getContactKeyboard()
-static getTaskCompletionKeyboard()
-static getMainMenuKeyboard()
-static removeKeyboard()
-```
-
-#### Приклади клавіатур:
-
-**Вибір професії:**
-```javascript
-[
-  [
-    { text: "1️⃣ QA (тестувальник)", callback_data: "profession_QA" },
-    { text: "2️⃣ Business Analyst", callback_data: "profession_BA" }
-  ],
-  [
-    { text: "📚 Дізнатися більше (FAQ)", callback_data: "show_faq" }
-  ]
-]
-```
-
-**Кнопка здачі завдання:**
-```javascript
-[
-  [
-    { text: "Я готовий здати тестове завдання", callback_data: "submit_task" }
-  ]
-]
-```
-
-## 📊 Types
-
-### BotStep
-**Кроки онбордингу**
-
-```javascript
-const BotStep = {
-  START: 'start',
-  PROFESSION_SELECTION: 'profession_selection',
-  CONTACT_REQUEST: 'contact_request',
-  TASK_DELIVERY: 'task_delivery',
-  COMPLETED: 'completed'
+this.colors = {
+  info: 0x3498db,      // Синій - інформаційні повідомлення
+  success: 0x2ecc71,   // Зелений - успішні дії
+  warning: 0xf39c12,   // Помаранчевий - попередження
+  danger: 0xe74c3c,    // Червоний - критичні події
+  primary: 0x9b59b6    // Фіолетовий - основні події
 };
 ```
 
-### Profession
-**Професії**
+## ⏰ ReminderService API
 
+### Конструктор
 ```javascript
-const Profession = {
-  QA: 'QA',
-  BA: 'BA'
+const reminderService = new ReminderService(databaseService, bot, webhookService);
+```
+
+**Параметри:**
+- `databaseService` (DatabaseService) - Сервіс БД
+- `bot` (Telegraf) - Екземпляр бота
+- `webhookService` (WebhookService) - Сервіс webhook (опціонально)
+
+### Методи
+
+#### `startReminderCron()`
+Запускає cron job для автоматичної перевірки нагадувань.
+
+**Повертає:** `void`
+
+**Cron розклад:** `0 10 * * 1-5` (щодня о 12:00 за Києвом, з понеділка по п'ятницю)
+
+#### `checkAndSendReminders()`
+Перевіряє та відправляє нагадування користувачам.
+
+**Повертає:** `Promise<void>`
+
+#### `sendReminder(telegramId, reminderType)`
+Відправляє нагадування конкретному користувачу.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID користувача
+- `reminderType` (string) - Тип нагадування (`day_3`, `day_7`, `day_9`)
+
+**Повертає:** `Promise<boolean>`
+
+#### `getReminderMessage(reminderType)`
+Отримує текст нагадування за типом.
+
+**Параметри:**
+- `reminderType` (string) - Тип нагадування
+
+**Повертає:** `string`
+
+#### `updateUserReminders(telegramId, reminderType)`
+Оновлює список відправлених нагадувань для користувача.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID користувача
+- `reminderType` (string) - Тип нагадування
+
+**Повертає:** `Promise<boolean>`
+
+### Типи нагадувань
+```javascript
+this.reminderTypes = {
+  DAY_3: 'day_3',  // 3-й день - мотиваційне
+  DAY_7: 'day_7',  // 7-й день - попередження
+  DAY_9: 'day_9'   // 9-й день - критичне
 };
 ```
 
-### UserState
-**Стан користувача**
+## 👤 UserStateService API
 
+### Конструктор
 ```javascript
-class UserState {
-  constructor(userId, telegramId, username) {
-    this.userId = userId;
-    this.telegramId = telegramId;
-    this.username = username;
-    this.currentStep = BotStep.START;
-    this.selectedProfession = null;
-    this.contactData = null;
-    this.taskSent = false;
-    this.lastActivity = new Date();
-    this.createdAt = new Date();
-  }
+const userStateService = new UserStateService(databaseService);
+```
+
+### Методи
+
+#### `getState(telegramId)`
+Отримує поточний стан користувача.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+
+**Повертає:** `Promise<UserState>`
+
+#### `updateState(telegramId, updates)`
+Оновлює стан користувача.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+- `updates` (Object) - Об'єкт з оновленнями
+
+**Повертає:** `Promise<UserState>`
+
+#### `setContactData(telegramId, contactData)`
+Встановлює контактні дані користувача.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+- `contactData` (Object) - Контактні дані
+
+**Повертає:** `Promise<UserState>`
+
+#### `markTaskSent(telegramId)`
+Позначає завдання як відправлене та встановлює дедлайн.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+
+**Повертає:** `Promise<UserState>`
+
+#### `calculateDeadline(sentDate)`
+Розраховує дедлайн (9 робочих днів).
+
+**Параметри:**
+- `sentDate` (Date) - Дата відправки
+
+**Повертає:** `Date`
+
+## 📞 ContactService API
+
+### Конструктор
+```javascript
+const contactService = new ContactService(databaseService);
+```
+
+### Методи
+
+#### `saveContact(telegramId, contact)`
+Зберігає контакт користувача.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+- `contact` (Object) - Telegram contact об'єкт
+
+**Повертає:** `Promise<ContactData>`
+
+#### `getContactByUserId(userId)`
+Отримує контакт за ID користувача.
+
+**Параметри:**
+- `userId` (string) - ID користувача
+
+**Повертає:** `Promise<ContactData|null>`
+
+#### `maskPhoneNumber(phoneNumber)`
+Маскує номер телефону для логів.
+
+**Параметри:**
+- `phoneNumber` (string) - Номер телефону
+
+**Повертає:** `string`
+
+## 📋 TaskService API
+
+### Конструктор
+```javascript
+const taskService = new TaskService(databaseService);
+```
+
+### Методи
+
+#### `getTaskInfo(profession)`
+Отримує інформацію про завдання для професії.
+
+**Параметри:**
+- `profession` (string) - Професія (`QA` або `BA`)
+
+**Повертає:** `Object|null`
+
+#### `getTaskFilePath(profession)`
+Отримує шлях до PDF файлу завдання.
+
+**Параметри:**
+- `profession` (string) - Професія
+
+**Повертає:** `string`
+
+#### `taskFileExists(profession)`
+Перевіряє існування PDF файлу.
+
+**Параметри:**
+- `profession` (string) - Професія
+
+**Повертає:** `Promise<boolean>`
+
+## 🗄️ DatabaseService API
+
+### Конструктор
+```javascript
+const databaseService = new DatabaseService();
+```
+
+### Методи
+
+#### `getUserByTelegramId(telegramId)`
+Отримує користувача за Telegram ID.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+
+**Повертає:** `Promise<Object|null>`
+
+#### `getUserState(telegramId)`
+Отримує стан користувача.
+
+**Параметри:**
+- `telegramId` (string) - Telegram ID
+
+**Повертає:** `Promise<UserState|null>`
+
+#### `saveUserState(userState)`
+Зберігає стан користувача.
+
+**Параметри:**
+- `userState` (UserState) - Стан користувача
+
+**Повертає:** `Promise<Object>`
+
+#### `saveContact(userId, contactData)`
+Зберігає контакт користувача.
+
+**Параметри:**
+- `userId` (string) - ID користувача
+- `contactData` (Object) - Контактні дані
+
+**Повертає:** `Promise<Object>`
+
+#### `getUsersWithTasks()`
+Отримує користувачів з відправленими завданнями.
+
+**Повертає:** `Promise<Array>`
+
+## 🔗 Discord Webhook Format
+
+### Базовий формат
+```javascript
+{
+  "embeds": [{
+    "title": "Заголовок повідомлення",
+    "color": 3447003, // HEX колір
+    "fields": [
+      {
+        "name": "Назва поля",
+        "value": "Значення поля",
+        "inline": true
+      }
+    ],
+    "footer": {
+      "text": "Підпис"
+    },
+    "timestamp": "2025-09-03T21:01:25.166Z"
+  }]
 }
 ```
 
-### ContactData
-**Контактні дані**
-
+### Discord Timestamp форматування
 ```javascript
-class ContactData {
-  constructor(phoneNumber, firstName, lastName) {
-    this.phoneNumber = phoneNumber;
-    this.firstName = firstName;
-    this.lastName = lastName;
-    this.createdAt = new Date();
-  }
+// Повна дата та час
+"<t:1756933285:F>"
+
+// Відносний час
+"<t:1756933285:R>"
+
+// Тільки дата
+"<t:1756933285:D>"
+
+// Тільки час
+"<t:1756933285:T>"
+```
+
+### Приклад повного webhook
+```javascript
+{
+  "embeds": [{
+    "title": "✅ Користувач завершив тестове завдання",
+    "color": 3066993, // Зелений
+    "fields": [
+      {
+        "name": "👤 Користувач",
+        "value": "**Ім'я:** Roman\n**Username:** @Num1221\n**Telegram ID:** `316149980`",
+        "inline": true
+      },
+      {
+        "name": "🎯 Завдання",
+        "value": "**Напрямок:** QA Engineer\n**Телефон:** `380671607348`",
+        "inline": true
+      },
+      {
+        "name": "⏰ Час виконання",
+        "value": "**Завершено:** <t:1756933285:F>\n**Виконано за:** 2 дн. 5 год.",
+        "inline": true
+      }
+    ],
+    "footer": {
+      "text": "SkillKlan Onboarding Bot • Готово до перевірки"
+    },
+    "timestamp": "2025-09-03T21:01:25.166Z"
+  }]
 }
 ```
 
-## 🔄 Callback Data
+## 🚨 Обробка помилок
 
-### Список callback'ів:
-- `profession_QA` - Вибір QA
-- `profession_BA` - Вибір BA
-- `ready_to_try` - Готовий спробувати
-- `submit_task` - Здати завдання
-- `show_faq` - Показати FAQ
-- `restart` - Перезапустити
+### WebhookService
+- Всі методи повертають `boolean`
+- Помилки логуються, але не зупиняють роботу бота
+- Таймаут 10 секунд для HTTP запитів
 
-### Обробка callback'ів:
+### ReminderService
+- Cron job працює незалежно від помилок
+- Помилки відправки нагадувань логуються
+- Webhook помилки не впливають на нагадування
+
+### DatabaseService
+- Всі методи мають try-catch обробку
+- Повертають `null` або порожні масиви при помилках
+- Детальне логування помилок
+
+## 📊 Логування
+
+### Формати логів
 ```javascript
-// В bot.js
-this.bot.action('profession_QA', async (ctx) => {
-  const userState = await this.userStateService.getState(ctx.from.id);
-  await professionHandler.handle(ctx, userState);
-});
+// Успішні операції
+console.log('✅ ServiceName: Операція виконана успішно');
+
+// Помилки
+console.error('❌ ServiceName: Помилка операції:', error);
+
+// Детальне логування
+console.log('🔍🔍🔍 ServiceName: Детальна інформація:', data);
 ```
 
-## 📁 File Structure
+### Webhook логи
+```javascript
+// Відправка
+console.log('🔍🔍🔍 WebhookService.sendMessage: відправляємо в Discord:', payload);
 
-### PDF файли:
-- `assets/tasks/qa-test-task.pdf` - Завдання для QA
-- `assets/tasks/ba-test-task.pdf` - Завдання для BA
+// Успіх
+console.log('✅ WebhookService.sendMessage: повідомлення відправлено в Discord, статус:', status);
 
-### Генерація PDF:
-```bash
-node generate-pdfs.js
+// Помилка
+console.error('❌ WebhookService.sendMessage: помилка відправки в Discord:', error);
 ```
-
-### Вміст PDF:
-- **QA:** Тестування веб-додатку, тест-кейси, баг-репорти (3 дні)
-- **BA:** Аналіз бізнес-процесів, збір вимог, ТЗ (5 днів)
-
-## 🔍 Logging
-
-### Формат логів:
-```
-🔍🔍🔍 Component.method: ПОЧАТОК
-🔍🔍🔍 Component.method: data = { ... }
-🔍🔍🔍 Component.method: результат = { ... }
-```
-
-### Критичні операції:
-- Всі handler'и
-- Database операції
-- Валідація стану
-- Обробка помилок
-
-### Файл логів:
-- `server.log` - Основні логи
-- `debug_logs.txt` - Додаткові логи (опціонально)
