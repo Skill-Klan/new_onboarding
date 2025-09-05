@@ -72,6 +72,39 @@ class WebhookService {
   }
 
   /**
+   * Повідомлення про готовність користувача спробувати
+   */
+  async notifyUserReady(userData) {
+    const embed = {
+      title: '🚀 Користувач готовий спробувати',
+      color: this.colors.info,
+      fields: [
+        {
+          name: '👤 Користувач',
+          value: `**Ім'я:** ${userData.firstName || 'Не вказано'}\n**Username:** @${userData.username || 'Не вказано'}\n**Telegram ID:** \`${userData.telegramId}\``,
+          inline: true
+        },
+        {
+          name: '🎯 Напрямок',
+          value: `**Професія:** ${userData.selectedProfession === 'QA' ? 'QA Engineer' : 'Business Analyst'}`,
+          inline: true
+        },
+        {
+          name: '⏰ Час',
+          value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
+          inline: true
+        }
+      ],
+      footer: {
+        text: 'SkillKlan Onboarding Bot'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    return await this.sendMessage(embed);
+  }
+
+  /**
    * Повідомлення про надання контактних даних
    */
   async notifyContactProvided(userData, contactData) {
