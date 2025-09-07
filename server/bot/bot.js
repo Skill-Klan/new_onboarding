@@ -24,8 +24,19 @@ const UnknownHandler = require('./handlers/UnknownHandler');
 
 class SkillKlanBot {
   constructor() {
+    console.log('🔍🔍🔍 SkillKlanBot constructor ВИКЛИКАНО');
+    console.log('🔍🔍🔍 process.env.TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN ? 'ПРИСУТНІЙ' : 'ВІДСУТНІЙ');
+    console.log('🔍🔍🔍 Довжина токена в constructor:', process.env.TELEGRAM_BOT_TOKEN ? process.env.TELEGRAM_BOT_TOKEN.length : 0);
+    console.log('🔍🔍🔍 Перші 10 символів токена:', process.env.TELEGRAM_BOT_TOKEN ? process.env.TELEGRAM_BOT_TOKEN.substring(0, 10) + '...' : 'НЕМАЄ');
+    
+    console.log('🔍🔍🔍 Створюємо Telegraf об\'єкт...');
     this.bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+    console.log('🔍🔍🔍 Telegraf об\'єкт створено');
+    console.log('🔍🔍🔍 this.bot.token:', this.bot.token ? 'ПРИСУТНІЙ' : 'ВІДСУТНІЙ');
+    
+    console.log('🔍🔍🔍 Створюємо DatabaseService...');
     this.databaseService = new DatabaseService();
+    console.log('🔍🔍🔍 DatabaseService створено');
     this.userStateService = new UserStateService(this.databaseService);
     this.contactService = new ContactService(this.databaseService);
     this.taskService = new TaskService(this.databaseService);
@@ -144,10 +155,41 @@ class SkillKlanBot {
    */
   async start() {
     try {
+      console.log('🔍🔍🔍 SkillKlanBot.start() ВИКЛИКАНО');
+      console.log('🔍🔍🔍 Токен бота:', process.env.TELEGRAM_BOT_TOKEN ? 'ПРИСУТНІЙ' : 'ВІДСУТНІЙ');
+      console.log('🔍🔍🔍 Довжина токена:', process.env.TELEGRAM_BOT_TOKEN ? process.env.TELEGRAM_BOT_TOKEN.length : 0);
+      
       // Тестуємо з'єднання з БД
+      console.log('🔍🔍🔍 Тестуємо з\'єднання з БД...');
       await this.databaseService.testConnection();
+      console.log('🔍🔍🔍 З\'єднання з БД успішне');
+      
+      // Перевіряємо токен через API
+      console.log('🔍🔍🔍 Перевіряємо токен через Telegram API...');
+      const testUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`;
+      console.log('🔍🔍🔍 URL для тестування:', testUrl);
+      
+      try {
+        const response = await fetch(testUrl);
+        const data = await response.json();
+        console.log('🔍🔍🔍 Відповідь Telegram API:', JSON.stringify(data, null, 2));
+        
+        if (!data.ok) {
+          console.error('❌❌❌ Telegram API повернув помилку:', data);
+          throw new Error(`Telegram API error: ${data.description}`);
+        }
+        
+        console.log('✅✅✅ Telegram API токен валідний');
+      } catch (apiError) {
+        console.error('❌❌❌ Помилка при перевірці токена через API:', apiError);
+        throw apiError;
+      }
       
       // Запускаємо бота
+      console.log('🔍🔍🔍 Запускаємо Telegraf bot...');
+      console.log('🔍🔍🔍 Telegraf bot об\'єкт:', typeof this.bot);
+      console.log('🔍🔍🔍 Telegraf bot токен:', this.bot.token ? 'ПРИСУТНІЙ' : 'ВІДСУТНІЙ');
+      
       await this.bot.launch();
       console.log('🤖 SkillKlan Bot запущено успішно!');
       

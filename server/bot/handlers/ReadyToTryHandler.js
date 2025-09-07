@@ -34,22 +34,6 @@ class ReadyToTryHandler extends BaseHandler {
       // Оновлюємо крок на TASK_DELIVERY
       await this.userStateService.updateStep(userState.telegramId, BotStep.TASK_DELIVERY);
       
-      // Відправляємо webhook про готовність користувача
-      try {
-        const webhookData = {
-          telegramId: userState.telegramId,
-          username: userState.username,
-          firstName: userState.contactData?.firstName || 'Не вказано',
-          lastName: userState.contactData?.lastName || 'Не вказано',
-          selectedProfession: userState.selectedProfession
-        };
-        await this.webhookService.notifyUserReady(webhookData);
-        console.log('✅ ReadyToTryHandler: Webhook про готовність користувача відправлено');
-      } catch (webhookError) {
-        console.error('❌ ReadyToTryHandler: Помилка відправки webhook:', webhookError);
-        // Не зупиняємо виконання через помилку webhook
-      }
-      
       // Відправляємо завдання
       const TaskHandler = require('./TaskHandler');
       const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
@@ -57,22 +41,6 @@ class ReadyToTryHandler extends BaseHandler {
     } else {
       // Якщо контакту немає, запитуємо його
       console.log('🔍🔍🔍 ReadyToTryHandler.execute: контакту немає, запитуємо');
-      
-      // Відправляємо webhook про готовність користувача (але без контакту)
-      try {
-        const webhookData = {
-          telegramId: userState.telegramId,
-          username: userState.username,
-          firstName: 'Не вказано',
-          lastName: 'Не вказано',
-          selectedProfession: userState.selectedProfession
-        };
-        await this.webhookService.notifyUserReady(webhookData);
-        console.log('✅ ReadyToTryHandler: Webhook про готовність користувача (без контакту) відправлено');
-      } catch (webhookError) {
-        console.error('❌ ReadyToTryHandler: Помилка відправки webhook:', webhookError);
-        // Не зупиняємо виконання через помилку webhook
-      }
       
       // Оновлюємо крок користувача
       console.log('🔍🔍🔍 ReadyToTryHandler.execute: оновлюємо крок на CONTACT_REQUEST');

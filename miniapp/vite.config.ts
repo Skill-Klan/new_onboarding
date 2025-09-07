@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
+  base: '/new_onboarding/',
   server: {
-    allowedHosts: true  }
+    allowedHosts: true
+  }
 })

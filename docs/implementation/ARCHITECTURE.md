@@ -1,243 +1,406 @@
 # Архітектура SkillKlan Telegram Bot
 
+## 📋 Зміст
+
+1. [Загальна архітектура](#загальна-архітектура)
+2. [Компоненти системи](#компоненти-системи)
+3. [Потік даних](#потік-даних)
+4. [Інтеграції](#інтеграції)
+5. [Безпека](#безпека)
+6. [Масштабування](#масштабування)
+
 ## 🏗️ Загальна архітектура
 
+### Високорівнева схема
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Telegram      │    │   Node.js       │    │   PostgreSQL    │
-│   Bot API       │◄──►│   Server        │◄──►│   Database      │
+│   Telegram      │    │   Node.js Bot   │    │   PostgreSQL    │
+│   Users         │◄──►│   Server        │◄──►│   Database      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
                               ▼
                        ┌─────────────────┐
-                       │   PDF Files     │
-                       │   (QA/BA tasks) │
+                       │   Discord       │
+                       │   Webhook       │
                        └─────────────────┘
 ```
 
-## 📊 Діаграма потоку даних
+### Архітектурні принципи
+- **Модульність:** Кожен компонент має чітку відповідальність
+- **Розділення відповідальностей:** Handlers, Services, Database
+- **Без кешування:** Кожен запит йде безпосередньо в БД
+- **Обробка помилок:** Graceful degradation
+- **Логування:** Детальне логування всіх операцій
 
-```mermaid
-graph TD
-    A[User sends /start] --> B[StartHandler]
-    B --> C[Profession Selection]
-    C --> D[ProfessionHandler]
-    D --> E[Ready to Try Button]
-    E --> F[ReadyToTryHandler]
-    F --> G{Has Contact?}
-    G -->|Yes| H[TaskHandler - Send PDF]
-    G -->|No| I[ContactHandler - Request Contact]
-    I --> J[User provides contact]
-    J --> K[ContactHandler - Save Contact]
-    K --> L[TaskHandler - Send PDF]
-    H --> M[Wait 10 seconds]
-    L --> M
-    M --> N[Send Task Submission Button]
-    N --> O[TaskSubmissionHandler]
-    O --> P[Notify Manager]
-```
+## 🧩 Компоненти системи
 
-## 🧩 Компонентна архітектура
+### 1. Bot Core (`bot/bot.js`)
+**Відповідальність:** Основний клас бота, координація компонентів
 
-### 1. Bot Layer (bot/)
-```
-bot/
-├── bot.js                 # Main bot class
-├── handlers/              # Command handlers
-│   ├── BaseHandler.js     # Base class for all handlers
-│   ├── StartHandler.js    # /start command
-│   ├── ProfessionHandler.js # Profession selection
-│   ├── ReadyToTryHandler.js # Ready to try button
-│   ├── ContactHandler.js  # Contact collection
-│   ├── TaskHandler.js     # PDF task delivery
-│   ├── TaskSubmissionHandler.js # Task submission
-│   ├── FAQHandler.js      # FAQ
-│   ├── RestartHandler.js  # Restart flow
-│   └── UnknownHandler.js  # Unknown commands
-├── services/              # Business logic
-│   ├── UserStateService.js # User state management
-│   ├── ContactService.js  # Contact management
-│   └── TaskService.js     # Task management
-├── templates/             # Message templates
-│   ├── messages.js        # Text templates
-│   └── keyboards.js       # Keyboard templates
-└── types/                 # Data types
-    └── index.js           # Type definitions
-```
-
-### 2. Shared Layer (shared/)
-```
-shared/
-├── database/              # Database layer
-│   └── DatabaseService.js # Database operations
-└── utils/                 # Utilities
-    └── (future utilities)
-```
-
-### 3. Assets Layer (assets/)
-```
-assets/
-└── tasks/                 # PDF task files
-    ├── qa-test-task.pdf   # QA test task
-    └── ba-test-task.pdf   # BA test task
-```
-
-## 🔄 Потік станів користувача
-
-```mermaid
-stateDiagram-v2
-    [*] --> start
-    start --> profession_selection
-    profession_selection --> profession_selection : Change profession
-    profession_selection --> contact_request : Ready to try
-    contact_request --> task_delivery : Provide contact
-    task_delivery --> completed : Task sent
-    completed --> [*] : Task submitted
-```
-
-### Стани користувача:
-- `start` - Початковий стан
-- `profession_selection` - Вибір професії
-- `contact_request` - Запит контакту
-- `task_delivery` - Доставка завдання
-- `completed` - Завершено
-
-## 🗄️ Модель даних
-
-### UserState
 ```javascript
-class UserState {
-  constructor(userId, telegramId, username) {
-    this.userId = userId;                    // ID в БД
-    this.telegramId = telegramId;            // Telegram ID
-    this.username = username;                // Telegram username
-    this.currentStep = BotStep.START;        // Поточний крок
-    this.selectedProfession = null;          // Вибрана професія
-    this.contactData = null;                 // Контактні дані
-    this.taskSent = false;                   // Завдання відправлено
-    this.lastActivity = new Date();          // Остання активність
-    this.createdAt = new Date();             // Дата створення
+class SkillKlanBot {
+  constructor() {
+    this.bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+    this.databaseService = new DatabaseService();
+    this.userStateService = new UserStateService(this.databaseService);
+    this.contactService = new ContactService(this.databaseService);
+    this.taskService = new TaskService(this.databaseService);
+    this.webhookService = new WebhookService();
+    this.reminderService = new ReminderService(this.databaseService, this.bot, this.webhookService);
   }
 }
 ```
 
-### ContactData
-```javascript
-class ContactData {
-  constructor(phoneNumber, firstName, lastName) {
-    this.phoneNumber = phoneNumber;          // Номер телефону
-    this.firstName = firstName;              // Ім'я
-    this.lastName = lastName;                // Прізвище
-    this.createdAt = new Date();             // Дата створення
-  }
-}
+**Функції:**
+- Ініціалізація всіх сервісів
+- Налаштування middleware
+- Реєстрація обробників
+- Запуск cron jobs
+
+### 2. Handlers (`bot/handlers/`)
+**Відповідальність:** Обробка команд та дій користувачів
+
+#### Ієрархія обробників
+```
+BaseHandler (абстрактний)
+├── StartHandler
+├── ProfessionHandler
+├── ReadyToTryHandler
+├── ContactHandler
+├── TaskHandler
+├── TaskSubmissionHandler
+├── RestartHandler
+└── UnknownHandler
 ```
 
-## 🔧 Паттерни проектування
-
-### 1. Handler Pattern
-Кожна команда має свій обробник:
+#### Паттерн обробки
 ```javascript
 class BaseHandler {
   async handle(ctx, userState) {
-    // Загальна логіка
+    // 1. Логування
+    this.logRequest(ctx, userState);
+    
+    // 2. Валідація стану
     if (!this.validateState(userState)) {
-      return this.handleInvalidState(ctx, userState);
+      await this.handleInvalidState(ctx, userState);
+      return;
     }
-    return this.execute(ctx, userState);
-  }
-  
-  async execute(ctx, userState) {
-    // Абстрактний метод
-  }
-  
-  validateState(userState) {
-    // Валідація стану
+    
+    // 3. Виконання логіки
+    await this.execute(ctx, userState);
+    
+    // 4. Оновлення стану
+    await this.updateUserState(ctx, userState);
   }
 }
 ```
 
-### 2. Service Layer Pattern
-Бізнес-логіка винесена в сервіси:
+### 3. Services (`bot/services/`)
+**Відповідальність:** Бізнес-логіка та інтеграції
+
+#### UserStateService
+- Управління станом користувача
+- Без кешування (кожен запит в БД)
+- Валідація та трансформація даних
+
+#### ContactService
+- Валідація контактних даних
+- Збереження в БД
+- Маскування для логів
+
+#### TaskService
+- Робота з PDF файлами
+- Генерація завдань
+- Валідація існування файлів
+
+#### ReminderService
+- Планування нагадувань
+- Cron job управління
+- Інтеграція з webhook
+
+#### WebhookService
+- Відправка повідомлень в Discord
+- Форматування embed повідомлень
+- Обробка помилок HTTP
+
+### 4. Database Layer (`shared/database/`)
+**Відповідальність:** Абстракція роботи з БД
+
 ```javascript
-class UserStateService {
-  async getState(telegramId) { /* ... */ }
-  async updateState(telegramId, updates) { /* ... */ }
-  async setProfession(telegramId, profession) { /* ... */ }
+class DatabaseService {
+  constructor() {
+    this.pool = new Pool({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+    });
+  }
 }
 ```
 
-### 3. Template Pattern
-Повідомлення та клавіатури винесені в шаблони:
-```javascript
-class MessageTemplates {
-  static getWelcomeMessage() { /* ... */ }
-  static getContactRequestMessage() { /* ... */ }
-}
+**Функції:**
+- Підключення до PostgreSQL
+- Виконання SQL запитів
+- Транзакції
+- Обробка помилок БД
 
-class KeyboardTemplates {
-  static getProfessionKeyboard() { /* ... */ }
-  static getContactKeyboard() { /* ... */ }
-}
+### 5. Templates (`bot/templates/`)
+**Відповідальність:** Управління текстами та клавіатурами
+
+#### MessageTemplates
+- Централізоване управління текстами
+- Підтримка локалізації
+- Динамічне формування повідомлень
+
+#### KeyboardTemplates
+- Генерація inline клавіатур
+- Кнопки з callback даними
+- WebApp інтеграція
+
+## 🔄 Потік даних
+
+### 1. Початок взаємодії
+```
+User → /start → StartHandler → UserStateService → DatabaseService → PostgreSQL
+                                    ↓
+                              WebhookService → Discord
 ```
 
-## 🔄 Життєвий цикл запиту
+### 2. Вибір професії
+```
+User → profession_QA → ProfessionHandler → UserStateService → DatabaseService → PostgreSQL
+```
 
-1. **Отримання повідомлення** - Telegram Bot API
-2. **Маршрутизація** - bot.js визначає обробник
-3. **Валідація стану** - BaseHandler.validateState()
-4. **Виконання логіки** - Handler.execute()
-5. **Оновлення стану** - UserStateService.updateState()
-6. **Збереження в БД** - DatabaseService.saveUserState()
-7. **Відправка відповіді** - ctx.reply()
+### 3. Надання контакту
+```
+User → Contact → ContactHandler → ContactService → DatabaseService → PostgreSQL
+                                      ↓
+                                WebhookService → Discord
+```
 
-## 🚀 Масштабування
+### 4. Відправка завдання
+```
+User → "Готовий" → TaskHandler → TaskService → PDF File
+                              ↓
+                        UserStateService → DatabaseService → PostgreSQL
+                              ↓
+                        WebhookService → Discord
+```
 
-### Горизонтальне масштабування:
-- Кілька екземплярів бота
-- Балансувальник навантаження
-- Спільна база даних
+### 5. Завершення завдання
+```
+User → "Здати" → TaskSubmissionHandler → WebhookService → Discord
+```
 
-### Вертикальне масштабування:
-- Оптимізація запитів до БД
-- Кешування (якщо потрібно)
-- Асинхронна обробка
+### 6. Нагадування
+```
+Cron Job → ReminderService → Bot → User
+                    ↓
+              WebhookService → Discord
+```
+
+## 🔗 Інтеграції
+
+### 1. Telegram Bot API
+**Бібліотека:** Telegraf 4.15.0
+**Функції:**
+- Обробка команд та callback'ів
+- Відправка повідомлень та файлів
+- Робота з клавіатурами
+- WebApp інтеграція
+
+### 2. PostgreSQL
+**Бібліотека:** pg 8.11.0
+**Функції:**
+- Збереження стану користувачів
+- Контактні дані
+- Історія дій
+- Нагадування
+
+### 3. Discord Webhook
+**Бібліотека:** axios 1.6.0
+**Функції:**
+- Відправка embed повідомлень
+- Кольорове кодування
+- Timestamp форматування
+- Обробка помилок
+
+### 4. Cron Jobs
+**Бібліотека:** node-cron 3.0.3
+**Функції:**
+- Планування нагадувань
+- Автоматична перевірка дедлайнів
+- Timezone підтримка
 
 ## 🔒 Безпека
 
-### 1. Валідація даних:
-- Перевірка типів
-- Санітизація вводу
-- Валідація телефонних номерів
+### 1. Валідація даних
+```javascript
+// Валідація телефонних номерів
+const cleanPhone = phone.replace(/[^\d]/g, '');
+if (cleanPhone.length !== 10 || !cleanPhone.startsWith('0')) {
+  throw new Error('Невірний формат номера телефону');
+}
 
-### 2. Обробка помилок:
-- Try-catch блоки
-- Graceful degradation
-- Логування помилок
+// Валідація професій
+if (!['qa', 'ba'].includes(profession)) {
+  throw new Error('Невірна професія');
+}
+```
 
-### 3. Захист від спаму:
-- Rate limiting
-- Валідація стану
-- Перевірка дозволів
+### 2. SQL Injection Protection
+```javascript
+// Використання параметризованих запитів
+const query = 'SELECT * FROM bot_users WHERE telegram_id = $1';
+const result = await this.pool.query(query, [telegramId]);
+```
 
-## 📊 Моніторинг
+### 3. Error Handling
+```javascript
+try {
+  await this.webhookService.sendMessage(embed);
+} catch (webhookError) {
+  console.error('❌ Webhook помилка:', webhookError);
+  // Не зупиняємо роботу бота
+}
+```
 
-### Логування:
-- Всі критичні операції
-- Помилки та винятки
-- Метрики продуктивності
+### 4. Environment Variables
+```javascript
+// Чутливі дані в .env
+TELEGRAM_BOT_TOKEN=your_bot_token
+DB_PASSWORD=your_password
+```
 
-### Метрики:
-- Кількість користувачів
-- Конверсія по кроках
-- Час відгуку
-- Помилки
+## 📈 Масштабування
 
-## 🔮 Майбутні покращення
+### 1. Горизонтальне масштабування
+- **Load Balancer:** Nginx для розподілу навантаження
+- **Multiple Instances:** Кілька екземплярів бота
+- **Database Replication:** Master-Slave конфігурація
 
-1. **Кешування** - Redis для швидкості
-2. **Черги** - Bull/Agenda для асинхронних задач
-3. **Аналітика** - Google Analytics/Mixpanel
-4. **Адмін-панель** - Веб-інтерфейс для менеджерів
-5. **Тести** - Unit та integration тести
-6. **CI/CD** - Автоматичне розгортання
+### 2. Вертикальне масштабування
+- **Connection Pooling:** pg Pool для оптимізації з'єднань
+- **Memory Management:** Обмеження розміру кешу
+- **CPU Optimization:** Асинхронні операції
+
+### 3. Моніторинг
+```javascript
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+```
+
+### 4. Логування
+```javascript
+// Структуроване логування
+console.log('🔍🔍🔍 ServiceName: Операція:', {
+  userId: telegramId,
+  action: 'task_sent',
+  timestamp: new Date().toISOString()
+});
+```
+
+## 🚀 Deployment Architecture
+
+### Docker Compose
+```yaml
+version: '3.8'
+services:
+  bot:
+    build: ./server
+    environment:
+      - DB_HOST=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=skillklan_db
+      - POSTGRES_USER=skillklan_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+```
+
+### Production Considerations
+1. **SSL/TLS:** HTTPS для webhook
+2. **Backup:** Автоматичне резервне копіювання БД
+3. **Monitoring:** Prometheus + Grafana
+4. **Logging:** ELK Stack або аналог
+5. **CI/CD:** GitHub Actions для автоматичного деплою
+
+## 📊 Performance Metrics
+
+### Ключові показники
+- **Response Time:** < 200ms для більшості операцій
+- **Database Queries:** Оптимізовані з індексами
+- **Memory Usage:** < 100MB на екземпляр
+- **Uptime:** 99.9% доступність
+
+### Оптимізації
+- **Connection Pooling:** Перевикористання з'єднань БД
+- **Async/Await:** Неблокуючі операції
+- **Error Recovery:** Graceful degradation
+- **Resource Cleanup:** Автоматичне звільнення ресурсів
+
+## 🔄 Data Flow Patterns
+
+### 1. Request-Response Pattern
+```
+User Request → Handler → Service → Database → Response
+```
+
+### 2. Event-Driven Pattern
+```
+User Action → Handler → Webhook → Discord Notification
+```
+
+### 3. Scheduled Pattern
+```
+Cron Job → ReminderService → User Notification + Webhook
+```
+
+### 4. State Machine Pattern
+```
+User State → Validation → Transition → New State
+```
+
+## 🎯 Future Architecture Considerations
+
+### 1. Microservices
+- Розділення на окремі сервіси
+- API Gateway для маршрутизації
+- Service Discovery
+
+### 2. Event Sourcing
+- Збереження всіх подій
+- Відновлення стану з подій
+- Аудит та аналітика
+
+### 3. CQRS
+- Розділення команд та запитів
+- Оптимізація для читання/запису
+- Eventual consistency
+
+### 4. Message Queues
+- Асинхронна обробка
+- Retry механізми
+- Dead letter queues

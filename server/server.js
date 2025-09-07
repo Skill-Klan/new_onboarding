@@ -13,7 +13,7 @@ const app = express();
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-domain.com'] 
+    ? ['https://your-username.github.io/new_onboarding'] 
     : ['http://localhost:5173', 'https://*.ngrok-free.app']
 }));
 app.use(express.json());
@@ -289,8 +289,14 @@ async function startServer() {
     });
 
     // Запускаємо Telegram бота (якщо є токен)
+    console.log('🔍🔍🔍 Перевіряємо наявність токена...');
+    console.log('🔍🔍🔍 process.env.TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN ? 'ПРИСУТНІЙ' : 'ВІДСУТНІЙ');
+    console.log('🔍🔍🔍 Довжина токена в server.js:', process.env.TELEGRAM_BOT_TOKEN ? process.env.TELEGRAM_BOT_TOKEN.length : 0);
+    
     if (process.env.TELEGRAM_BOT_TOKEN) {
+      console.log('🔍🔍🔍 Токен присутній, створюємо новий екземпляр бота...');
       const bot = new SkillKlanBot();
+      console.log('🔍🔍🔍 Екземпляр бота створено, запускаємо...');
       await bot.start();
       
       // Запускаємо cron job для нагадувань

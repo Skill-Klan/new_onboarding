@@ -277,17 +277,17 @@ chmod 644 assets/tasks/*.pdf
 ssh -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-dss admin@192.168.88.1
 
 # 2. Підключення до сервера через маршрутизатор
-/system ssh address=192.168.88.121 user=roman
+/system ssh address=your-username.github.io user=roman
 
 # 3. Відновлення SSH ключів на сервері
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMmQ4GzK4AxoNxYH3txDJDZ2xANnDioJtqC4OC9gLX71 server_192.168.88.121" >> ~/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMmQ4GzK4AxoNxYH3txDJDZ2xANnDioJtqC4OC9gLX71 server_your-username.github.io" >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 
 # 4. Тестування підключення
 exit  # з сервера
 exit  # з маршрутизатора
-ssh -i ~/.ssh/id_ed25519_server_192 roman@192.168.88.121
+ssh -i ~/.ssh/id_ed25519_server_192 roman@your-username.github.io
 ```
 
 **Детальна інструкція:** [ERRORS_AND_FIXES.md#відновлення-ssh-доступу](ERRORS_AND_FIXES.md#відновлення-ssh-доступу)

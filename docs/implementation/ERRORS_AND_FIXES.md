@@ -497,7 +497,7 @@ ssh -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-dss a
 **Крок 2: Підключення до сервера через маршрутизатор**
 ```bash
 # В консолі MikroTik
-/system ssh address=192.168.88.121 user=roman
+/system ssh address=your-username.github.io user=roman
 ```
 
 **Крок 3: Відновлення SSH ключів на сервері**
@@ -507,12 +507,12 @@ mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 
 # Додати новий SSH ключ
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMmQ4GzK4AxoNxYH3txDJDZ2xANnDioJtqC4OC9gLX71 server_192.168.88.121" >> ~/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMmQ4GzK4AxoNxYH3txDJDZ2xANnDioJtqC4OC9gLX71 server_your-username.github.io" >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 
 # Додати ключ для root
 sudo mkdir -p /root/.ssh
-sudo bash -c 'echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMmQ4GzK4AxoNxYH3txDJDZ2xANnDioJtqC4OC9gLX71 server_192.168.88.121" >> /root/.ssh/authorized_keys'
+sudo bash -c 'echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMmQ4GzK4AxoNxYH3txDJDZ2xANnDioJtqC4OC9gLX71 server_your-username.github.io" >> /root/.ssh/authorized_keys'
 sudo chmod 700 /root/.ssh
 sudo chmod 600 /root/.ssh/authorized_keys
 ```
@@ -520,7 +520,7 @@ sudo chmod 600 /root/.ssh/authorized_keys
 **Крок 4: Тестування підключення**
 ```bash
 # З локальної машини
-ssh -i ~/.ssh/id_ed25519_server_192 roman@192.168.88.121
+ssh -i ~/.ssh/id_ed25519_server_192 roman@your-username.github.io
 ```
 
 ### 3. Створення нового SSH ключа
@@ -528,7 +528,7 @@ ssh -i ~/.ssh/id_ed25519_server_192 roman@192.168.88.121
 **Якщо потрібен новий ключ:**
 ```bash
 # Створення нового SSH ключа
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_server_192 -C "server_192.168.88.121" -N ""
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_server_192 -C "server_your-username.github.io" -N ""
 
 # Перевірка публічного ключа
 cat ~/.ssh/id_ed25519_server_192.pub
@@ -599,13 +599,13 @@ sudo sshd -t
 **Перевірка мережі:**
 ```bash
 # Доступність сервера
-ping 192.168.88.121
+ping your-username.github.io
 
 # Перевірка портів
-nmap -p 22 192.168.88.121
+nmap -p 22 your-username.github.io
 
 # Перевірка маршрутизації
-traceroute 192.168.88.121
+traceroute your-username.github.io
 ```
 
 **Перевірка SSH ключів:**
@@ -617,7 +617,7 @@ ls -la ~/.ssh/
 ssh-keygen -lf ~/.ssh/authorized_keys
 
 # Тестування підключення
-ssh -v -i ~/.ssh/id_ed25519_server_192 roman@192.168.88.121
+ssh -v -i ~/.ssh/id_ed25519_server_192 roman@your-username.github.io
 ```
 
 ### 7. Важливі зауваження

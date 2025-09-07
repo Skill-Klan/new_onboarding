@@ -1,14 +1,37 @@
-# Залежності та налаштування - SkillKlan Bot
+# Залежності SkillKlan Telegram Bot
 
-## 📦 NPM пакети
+## 📋 Зміст
 
-### Основні залежності
+1. [Основні залежності](#основні-залежності)
+2. [Dev залежності](#dev-залежності)
+3. [Системні вимоги](#системні-вимоги)
+4. [Встановлення](#встановлення)
+5. [Конфігурація](#конфігурація)
+6. [Версії та сумісність](#версії-та-сумісність)
 
-#### 1. Telegraf (^4.15.0)
-**Призначення:** Telegram Bot API для Node.js
-```bash
-npm install telegraf
+## 📦 Основні залежності
+
+### Core Dependencies
+```json
+{
+  "telegraf": "^4.15.0",
+  "pg": "^8.11.0",
+  "pdfkit": "^0.14.0",
+  "axios": "^1.6.0",
+  "node-cron": "^3.0.3"
+}
 ```
+
+### Детальний опис
+
+#### 1. telegraf (^4.15.0)
+**Призначення:** Telegram Bot API framework
+**Функції:**
+- Обробка команд та callback'ів
+- Відправка повідомлень та файлів
+- Робота з клавіатурами
+- WebApp інтеграція
+- Middleware підтримка
 
 **Використання:**
 ```javascript
@@ -16,17 +39,16 @@ const { Telegraf } = require('telegraf');
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 ```
 
-**Ключові функції:**
-- Обробка команд та callback'ів
-- Відправка повідомлень та файлів
-- Робота з клавіатурами
-- Middleware система
+**Альтернативи:** `node-telegram-bot-api`, `grammy`
 
 #### 2. pg (^8.11.0)
 **Призначення:** PostgreSQL драйвер для Node.js
-```bash
-npm install pg
-```
+**Функції:**
+- Підключення до PostgreSQL
+- Connection pooling
+- Підтримка транзакцій
+- Prepared statements
+- SSL підтримка
 
 **Використання:**
 ```javascript
@@ -40,464 +62,372 @@ const pool = new Pool({
 });
 ```
 
-**Ключові функції:**
-- Підключення до PostgreSQL
-- Виконання SQL запитів
-- Connection pooling
-- Транзакції
+**Альтернативи:** `mysql2`, `sqlite3`, `mongodb`
 
 #### 3. pdfkit (^0.14.0)
-**Призначення:** Генерація PDF файлів
-```bash
-npm install pdfkit
-```
+**Призначення:** Генерація PDF документів
+**Функції:**
+- Створення PDF файлів
+- Текст та форматування
+- Зображення та графіка
+- Таблиці та списки
 
 **Використання:**
 ```javascript
 const PDFDocument = require('pdfkit');
 const doc = new PDFDocument();
-doc.pipe(fs.createWriteStream('output.pdf'));
-doc.text('Hello World');
-doc.end();
 ```
 
-**Ключові функції:**
-- Створення PDF документів
-- Додавання тексту та зображень
-- Форматування
-- Збереження в файл
+**Альтернативи:** `jspdf`, `puppeteer`, `html-pdf`
 
-### Dev залежності (опціонально)
+#### 4. axios (^1.6.0)
+**Призначення:** HTTP клієнт для webhook запитів
+**Функції:**
+- HTTP/HTTPS запити
+- Promise-based API
+- Request/Response interceptors
+- Timeout підтримка
+- Error handling
 
-#### 1. nodemon
+**Використання:**
+```javascript
+const axios = require('axios');
+const response = await axios.post(webhookUrl, payload, {
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000
+});
+```
+
+**Альтернативи:** `node-fetch`, `got`, `request`
+
+#### 5. node-cron (^3.0.3)
+**Призначення:** Планувальник завдань (cron jobs)
+**Функції:**
+- Cron expression підтримка
+- Timezone підтримка
+- Запуск/зупинка завдань
+- Error handling
+
+**Використання:**
+```javascript
+const cron = require('node-cron');
+cron.schedule('0 10 * * 1-5', async () => {
+  await checkAndSendReminders();
+}, {
+  scheduled: true,
+  timezone: "Europe/Kiev"
+});
+```
+
+**Альтернативи:** `node-schedule`, `agenda`, `bull`
+
+## 🛠️ Dev залежності
+
+### Development Dependencies
+```json
+{
+  "nodemon": "^3.0.0",
+  "dotenv": "^16.0.0"
+}
+```
+
+### Детальний опис
+
+#### 1. nodemon (^3.0.0)
 **Призначення:** Автоматичний перезапуск при змінах
-```bash
-npm install --save-dev nodemon
-```
+**Функції:**
+- File watching
+- Automatic restart
+- Configurable patterns
+- Environment variables
 
 **Використання:**
 ```bash
 npx nodemon server.js
 ```
 
-#### 2. eslint
-**Призначення:** Лінтер для JavaScript
-```bash
-npm install --save-dev eslint
+#### 2. dotenv (^16.0.0)
+**Призначення:** Завантаження змінних середовища
+**Функції:**
+- .env file підтримка
+- Environment variable loading
+- Validation
+- Type conversion
+
+**Використання:**
+```javascript
+require('dotenv').config();
+console.log(process.env.TELEGRAM_BOT_TOKEN);
 ```
 
-## 🖥️ Системні вимоги
+## 💻 Системні вимоги
 
 ### Node.js
-**Версія:** 16.0.0 або вище
-```bash
-# Перевірка версії
-node --version
-
-# Встановлення через nvm
-nvm install 16
-nvm use 16
-```
+- **Мінімальна версія:** 16.0.0
+- **Рекомендована версія:** 18.0.0+
+- **LTS версія:** 20.0.0+
 
 ### PostgreSQL
-**Версія:** 12.0 або вище
+- **Мінімальна версія:** 12.0
+- **Рекомендована версія:** 13.0+
+- **Підтримувані версії:** 12, 13, 14, 15, 16
+
+### Операційна система
+- **Linux:** Ubuntu 20.04+, CentOS 8+, Debian 11+
+- **macOS:** 10.15+ (Catalina)
+- **Windows:** Windows 10+ (з WSL2)
+
+### Апаратні вимоги
+- **RAM:** Мінімум 512MB, рекомендовано 1GB+
+- **CPU:** 1 core, рекомендовано 2+ cores
+- **Диск:** 1GB вільного місця
+- **Мережа:** Стабільне інтернет-з'єднання
+
+## 🚀 Встановлення
+
+### 1. Встановлення Node.js
+```bash
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# macOS (з Homebrew)
+brew install node
+
+# Windows (з Chocolatey)
+choco install nodejs
+```
+
+### 2. Встановлення PostgreSQL
 ```bash
 # Ubuntu/Debian
 sudo apt-get install postgresql postgresql-contrib
 
-# macOS
+# macOS (з Homebrew)
 brew install postgresql
 
 # Windows
 # Завантажити з https://www.postgresql.org/download/windows/
 ```
 
-### Docker (опціонально)
-**Версія:** 20.0 або вище
-```bash
-# Перевірка версії
-docker --version
-docker compose version
-```
-
-## ⚙️ Налаштування середовища
-
-### 1. Змінні середовища
-
-#### server/.env
-```bash
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=skillklan_db
-DB_USER=skillklan_user
-DB_PASSWORD=your_password_here
-
-# Server
-PORT=3000
-NODE_ENV=development
-```
-
-#### server/config.env (для Docker)
-```bash
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-
-# Database
-DB_HOST=postgres
-DB_PORT=5432
-DB_NAME=skillklan_db
-DB_USER=skillklan_user
-DB_PASSWORD=your_password_here
-
-# Server
-PORT=3000
-NODE_ENV=production
-```
-
-### 2. Налаштування PostgreSQL
-
-#### Створення бази даних
-```sql
--- Підключення як postgres
-sudo -u postgres psql
-
--- Створення користувача
-CREATE USER skillklan_user WITH PASSWORD 'your_password';
-
--- Створення бази даних
-CREATE DATABASE skillklan_db OWNER skillklan_user;
-
--- Надання прав
-GRANT ALL PRIVILEGES ON DATABASE skillklan_db TO skillklan_user;
-
--- Підключення до бази
-\c skillklan_db
-
--- Надання прав на схему
-GRANT ALL ON SCHEMA public TO skillklan_user;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO skillklan_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO skillklan_user;
-```
-
-#### Створення таблиць
-```sql
--- Виконання SQL скрипту
-psql -h localhost -U skillklan_user -d skillklan_db -f database/bot_tables.sql
-```
-
-### 3. Налаштування Telegram Bot
-
-#### Отримання токена
-1. Відкрити [@BotFather](https://t.me/botfather)
-2. Відправити `/newbot`
-3. Вказати назву бота
-4. Вказати username бота
-5. Отримати токен
-
-#### Налаштування бота
-```bash
-# Встановлення опису
-/setdescription
-
-# Встановлення команд
-/setcommands
-start - Почати роботу з ботом
-help - Допомога
-```
-
-## 🐳 Docker налаштування
-
-### docker-compose.yml
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:14
-    environment:
-      POSTGRES_DB: skillklan_db
-      POSTGRES_USER: skillklan_user
-      POSTGRES_PASSWORD: your_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database:/docker-entrypoint-initdb.d
-
-  bot:
-    build: .
-    depends_on:
-      - postgres
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - config.env
-    volumes:
-      - ./assets:/app/assets
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-```
-
-### Dockerfile
-```dockerfile
-FROM node:16-alpine
-
-WORKDIR /app
-
-# Копіювання package.json та package-lock.json
-COPY package*.json ./
-
-# Встановлення залежностей
-RUN npm ci --only=production
-
-# Копіювання коду
-COPY . .
-
-# Створення користувача
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Зміна власника
-RUN chown -R nodejs:nodejs /app
-USER nodejs
-
-# Відкриття порту
-EXPOSE 3000
-
-# Команда запуску
-CMD ["node", "server.js"]
-```
-
-## 🔧 Налаштування розробки
-
-### 1. Структура проекту
-```
-server/
-├── .env                    # Локальні змінні
-├── .gitignore             # Git ignore
-├── package.json           # NPM залежності
-├── server.js              # Точка входу
-├── bot/                   # Код бота
-├── shared/                # Спільні компоненти
-├── assets/                # Ресурси
-├── database/              # SQL скрипти
-└── docs/                  # Документація
-```
-
-### 2. .gitignore
-```gitignore
-# Dependencies
-node_modules/
-npm-debug.log*
-
-# Environment variables
-.env
-.env.local
-.env.production
-
-# Logs
-*.log
-logs/
-
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-```
-
-### 3. package.json
-```json
-{
-  "name": "skillklan-server",
-  "version": "1.0.0",
-  "description": "SkillKlan Telegram Bot Server",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "telegraf": "^4.15.0",
-    "pg": "^8.11.0",
-    "pdfkit": "^0.14.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.0"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  }
-}
-```
-
-## 🚀 Запуск проекту
-
-### 1. Локальний запуск
+### 3. Встановлення залежностей проекту
 ```bash
 # Клонування репозиторію
-git clone <repository-url>
+git clone https://github.com/Skill-Klan/new_onboarding.git
 cd new_onboarding/server
 
 # Встановлення залежностей
 npm install
 
-# Налаштування змінних середовища
-cp .env.example .env
-# Відредагувати .env файл
+# Або з yarn
+yarn install
+```
 
-# Налаштування БД
+### 4. Налаштування бази даних
+```bash
+# Створення бази даних
 createdb skillklan_db
+
+# Створення користувача
+sudo -u postgres createuser skillklan_user
+sudo -u postgres psql -c "ALTER USER skillklan_user PASSWORD 'your_password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE skillklan_db TO skillklan_user;"
+
+# Виконання SQL скриптів
 psql -d skillklan_db -f database/bot_tables.sql
-
-# Генерація PDF файлів
-node generate-pdfs.js
-
-# Запуск сервера
-npm start
+psql -d skillklan_db -f database/add_reminder_columns.sql
 ```
 
-### 2. Docker запуск
+## ⚙️ Конфігурація
+
+### Environment Variables
 ```bash
-# Запуск через Docker Compose
-docker compose up --build
-
-# Запуск в фоновому режимі
-docker compose up -d --build
-
-# Перегляд логів
-docker compose logs -f bot
+# .env файл
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=skillklan_db
+DB_USER=skillklan_user
+DB_PASSWORD=your_secure_password
+PORT=3000
+NODE_ENV=development
 ```
 
-### 3. Production запуск
+### Telegram Bot Token
+1. Створіть бота через [@BotFather](https://t.me/botfather)
+2. Отримайте токен
+3. Додайте токен в .env файл
+
+### Discord Webhook
+1. Створіть webhook в Discord каналі
+2. Скопіюйте URL webhook
+3. Додайте в код або змінні середовища
+
+### Database Configuration
+```javascript
+// Рекомендовані налаштування пулу з'єднань
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20,                    // Максимум з'єднань
+  idleTimeoutMillis: 30000,   // Таймаут неактивних з'єднань
+  connectionTimeoutMillis: 2000, // Таймаут підключення
+});
+```
+
+## 🔄 Версії та сумісність
+
+### Semantic Versioning
+- **Major (X.0.0):** Breaking changes
+- **Minor (0.X.0):** Нові функції, backward compatible
+- **Patch (0.0.X):** Bug fixes, backward compatible
+
+### Версії залежностей
+
+#### telegraf
+- **4.15.0:** Поточна версія
+- **4.14.x:** Підтримується
+- **4.13.x:** Застаріла
+- **Breaking changes:** При оновленні до 5.x
+
+#### pg
+- **8.11.0:** Поточна версія
+- **8.10.x:** Підтримується
+- **8.9.x:** Застаріла
+- **Breaking changes:** При оновленні до 9.x
+
+#### pdfkit
+- **0.14.0:** Поточна версія
+- **0.13.x:** Підтримується
+- **0.12.x:** Застаріла
+
+#### axios
+- **1.6.0:** Поточна версія
+- **1.5.x:** Підтримується
+- **1.4.x:** Застаріла
+- **Breaking changes:** При оновленні до 2.x
+
+#### node-cron
+- **3.0.3:** Поточна версія
+- **2.x:** Застаріла
+- **Breaking changes:** При оновленні до 3.x
+
+### Оновлення залежностей
 ```bash
-# Встановлення PM2
-npm install -g pm2
+# Перевірка застарілих пакетів
+npm outdated
 
-# Запуск через PM2
-pm2 start server.js --name "skillklan-bot"
+# Оновлення до останніх версій
+npm update
 
-# Налаштування автозапуску
-pm2 startup
-pm2 save
+# Оновлення конкретного пакету
+npm install telegraf@latest
+
+# Оновлення всіх пакетів
+npx npm-check-updates -u
+npm install
 ```
 
-## 🔍 Перевірка налаштувань
+## 🐛 Troubleshooting
 
-### 1. Перевірка Node.js
+### Поширені проблеми
+
+#### 1. Помилка підключення до БД
 ```bash
-node --version
-npm --version
+Error: connect ECONNREFUSED 127.0.0.1:5432
 ```
+**Рішення:**
+- Перевірте, чи запущений PostgreSQL
+- Перевірте налаштування в .env
+- Перевірте права доступу користувача
 
-### 2. Перевірка PostgreSQL
+#### 2. Помилка Telegram Bot API
 ```bash
-# Підключення до БД
-psql -h localhost -U skillklan_user -d skillklan_db
-
-# Перевірка таблиць
-\dt
-
-# Перевірка даних
-SELECT COUNT(*) FROM bot_users;
+Error: 401: Unauthorized
 ```
+**Рішення:**
+- Перевірте правильність токена
+- Переконайтеся, що бот не заблокований
+- Перевірте налаштування webhook
 
-### 3. Перевірка Telegram Bot
+#### 3. Помилка Discord Webhook
 ```bash
-# Тест токена
-curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getMe"
+Error: Request failed with status code 404
 ```
+**Рішення:**
+- Перевірте правильність URL webhook
+- Переконайтеся, що webhook не видалений
+- Перевірте права доступу до каналу
 
-### 4. Перевірка сервера
+#### 4. Помилка PDF генерації
 ```bash
-# Запуск сервера
-node server.js
-
-# Перевірка в браузері
-curl http://localhost:3000/health
+Error: ENOENT: no such file or directory
 ```
+**Рішення:**
+- Перевірте існування PDF файлів
+- Запустіть генерацію PDF: `node generate-pdfs.js`
+- Перевірте права доступу до файлів
 
-## 🛠️ Troubleshooting
-
-### 1. Проблеми з підключенням до БД
+### Логи та дебаг
 ```bash
-# Перевірка статусу PostgreSQL
-sudo systemctl status postgresql
+# Запуск з детальними логами
+DEBUG=* node server.js
 
-# Перезапуск PostgreSQL
-sudo systemctl restart postgresql
+# Моніторинг логів
+tail -f server.log
 
-# Перевірка портів
-netstat -tlnp | grep 5432
+# Перевірка статусу сервісів
+systemctl status postgresql
+systemctl status nginx
 ```
 
-### 2. Проблеми з токеном бота
+## 📊 Performance Considerations
+
+### Memory Usage
+- **Node.js:** ~50-100MB базове використання
+- **PostgreSQL:** ~100-200MB для невеликої БД
+- **Total:** ~200-300MB для повної системи
+
+### CPU Usage
+- **Idle:** < 1% CPU
+- **Active:** 5-15% CPU при обробці повідомлень
+- **Peak:** До 50% CPU при генерації PDF
+
+### Network Usage
+- **Inbound:** ~1-5KB на повідомлення
+- **Outbound:** ~10-50KB на відповідь
+- **Webhook:** ~1-2KB на Discord повідомлення
+
+### Database Performance
+- **Connection Pool:** 10-20 з'єднань
+- **Query Time:** < 100ms для більшості запитів
+- **Indexes:** Оптимізовані для швидкого пошуку
+
+## 🔒 Security Considerations
+
+### Dependencies Security
 ```bash
-# Перевірка токена
-curl "https://api.telegram.org/bot<TOKEN>/getMe"
+# Перевірка вразливостей
+npm audit
 
-# Перевірка змінних середовища
-echo $TELEGRAM_BOT_TOKEN
+# Автоматичне виправлення
+npm audit fix
+
+# Детальний звіт
+npm audit --audit-level moderate
 ```
 
-### 3. Проблеми з правами доступу
-```bash
-# Зміна прав на файли
-chmod 644 server.js
-chmod 755 assets/
+### Environment Security
+- Використовуйте сильні паролі
+- Обмежте доступ до .env файлів
+- Використовуйте HTTPS для webhook
+- Регулярно оновлюйте залежності
 
-# Зміна власника
-chown -R $USER:$USER .
-```
-
-### 4. Проблеми з портами
-```bash
-# Перевірка зайнятих портів
-lsof -i :3000
-lsof -i :5432
-
-# Звільнення порту
-kill -9 <PID>
-```
+### Database Security
+- Використовуйте SSL з'єднання
+- Обмежте права користувача БД
+- Регулярно робіть резервні копії
+- Моніторьте підозрілу активність
