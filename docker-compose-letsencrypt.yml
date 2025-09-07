@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: skillklan-nginx-letsencrypt
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./public:/var/www/skillklan/public:ro
+      - ./ssl-certs:/etc/nginx/ssl:ro
+      - ./certbot-webroot:/var/www/certbot:ro
+    depends_on:
+      - certbot
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    container_name: skillklan-certbot
+    volumes:
+      - ./ssl-certs:/etc/letsencrypt
+      - ./certbot-webroot:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email admin@skillklan.mooo.com --agree-tos --no-eff-email -d skillklan.mooo.com
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: skillklan-postgres
+    environment:
+      POSTGRES_DB: skillklan
+      POSTGRES_USER: skillklan
+      POSTGRES_PASSWORD: skillklan123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    restart: unless-stopped
+
+  server:
+    build: .
+    container_name: skillklan-server
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://skillklan:skillklan123@postgres:5432/skillklan
+      BOT_TOKEN: ${BOT_TOKEN}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+    depends_on:
+      - postgres
+    ports:
+      - '3001:3001'
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
