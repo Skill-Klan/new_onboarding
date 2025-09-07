@@ -33,7 +33,7 @@
               },
               {
                 "text": "❓ Маєш питання? Подивись відповіді",
-                "web_app": "https://your-username.github.io/new_onboarding/faq",
+                "web_app": "https://skill-klan.github.io/new_onboarding/faq",
                 "action": "open_faq_miniapp"
               }
             ]
@@ -164,7 +164,7 @@
           "trigger": "Натискання кнопки 'Дізнатися більше (FAQ)'",
           "action": {
             "type": "web_app",
-            "url": "https://your-username.github.io/new_onboarding/faq",
+            "url": "https://skill-klan.github.io/new_onboarding/faq",
             "description": "Відкриває MiniApp з FAQ напряму"
           },
           "note": "Не змінює поточний крок користувача"
@@ -225,7 +225,7 @@
         },
         {
           "text": "❓ Маєш питання? Подивись відповіді",
-          "web_app": "https://your-username.github.io/new_onboarding/faq",
+          "web_app": "https://skill-klan.github.io/new_onboarding/faq",
           "action": "open_faq_miniapp"
         }
       ]

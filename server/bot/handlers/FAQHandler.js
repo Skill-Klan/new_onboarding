@@ -4,8 +4,8 @@ const BaseHandler = require('./BaseHandler');
 
 class FAQHandler extends BaseHandler {
   async execute(ctx, userState) {
-    // URL до MiniApp FAQ
-    const faqUrl = process.env.WEBAPP_URL || 'https://your-username.github.io/new_onboarding/faq';
+    // URL до MiniApp FAQ на GitHub Pages
+    const faqUrl = process.env.WEBAPP_URL || 'https://skill-klan.github.io/new_onboarding/faq';
     
     // Відкриваємо MiniApp FAQ
     await ctx.reply('📚 Відкриваю FAQ для вас...', {
