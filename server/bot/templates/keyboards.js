@@ -12,7 +12,7 @@ class KeyboardTemplates {
         Markup.button.callback('1️⃣ QA — хочу тестувати!', 'profession_QA'),
         Markup.button.callback('2️⃣ Business Analyst — хочу аналізувати!', 'profession_BA')
       ],
-      [Markup.button.webApp('❓ Маєш питання? Подивись відповіді', process.env.WEBAPP_URL || 'https://your-username.github.io/new_onboarding/faq')]
+      [Markup.button.webApp('❓ Маєш питання? Подивись відповіді', process.env.WEBAPP_URL || 'https://skill-klan.github.io/new_onboarding/faq')]
     ]);
   }
 

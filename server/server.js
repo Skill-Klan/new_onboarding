@@ -13,7 +13,7 @@ const app = express();
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-username.github.io/new_onboarding'] 
+    ? ['https://skill-klan.github.io/new_onboarding'] 
     : ['http://localhost:5173', 'https://*.ngrok-free.app']
 }));
 app.use(express.json());
