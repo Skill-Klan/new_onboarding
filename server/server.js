@@ -13,7 +13,7 @@ const app = express();
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://skill-klan.github.io/new_onboarding'] 
+    ? ['https://your-domain.com'] 
     : ['http://localhost:5173', 'https://*.ngrok-free.app']
 }));
 app.use(express.json());
@@ -272,6 +272,121 @@ app.post('/api/update-test-task-status', async (req, res) => {
   }
 });
 
+// ========================================
+// Webhook Management API
+// ========================================
+
+// Глобальна змінна для зберігання посилання на webhookService
+let webhookServiceInstance = null;
+
+// API для отримання статусу webhook
+app.get('/api/webhook/status', (req, res) => {
+  try {
+    if (!webhookServiceInstance) {
+      return res.status(503).json({ 
+        error: 'WebhookService не ініціалізовано' 
+      });
+    }
+    
+    const status = webhookServiceInstance.getStatus();
+    res.json({ success: true, status });
+  } catch (error) {
+    console.error('Error getting webhook status:', error);
+    res.status(500).json({ error: 'Помилка отримання статусу webhook' });
+  }
+});
+
+// API для увімкнення/вимкнення webhook
+app.post('/api/webhook/toggle', (req, res) => {
+  try {
+    const { enabled } = req.body;
+    
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ 
+        error: 'Параметр enabled має бути boolean' 
+      });
+    }
+    
+    if (!webhookServiceInstance) {
+      return res.status(503).json({ 
+        error: 'WebhookService не ініціалізовано' 
+      });
+    }
+    
+    webhookServiceInstance.setEnabled(enabled);
+    
+    res.json({ 
+      success: true, 
+      message: `Webhook ${enabled ? 'увімкнено' : 'вимкнено'}`,
+      enabled 
+    });
+  } catch (error) {
+    console.error('Error toggling webhook:', error);
+    res.status(500).json({ error: 'Помилка перемикання webhook' });
+  }
+});
+
+// API для управління конкретними типами повідомлень
+app.post('/api/webhook/notification', (req, res) => {
+  try {
+    const { type, enabled } = req.body;
+    
+    if (!type || typeof enabled !== 'boolean') {
+      return res.status(400).json({ 
+        error: 'Параметри type та enabled обов\'язкові' 
+      });
+    }
+    
+    if (!webhookServiceInstance) {
+      return res.status(503).json({ 
+        error: 'WebhookService не ініціалізовано' 
+      });
+    }
+    
+    webhookServiceInstance.setNotificationEnabled(type, enabled);
+    
+    res.json({ 
+      success: true, 
+      message: `Повідомлення ${type} ${enabled ? 'увімкнено' : 'вимкнено'}`,
+      type,
+      enabled 
+    });
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    res.status(500).json({ error: 'Помилка оновлення повідомлення' });
+  }
+});
+
+// API для оновлення конфігурації webhook
+app.post('/api/webhook/config', (req, res) => {
+  try {
+    const { config } = req.body;
+    
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ 
+        error: 'Параметр config має бути об\'єктом' 
+      });
+    }
+    
+    if (!webhookServiceInstance) {
+      return res.status(503).json({ 
+        error: 'WebhookService не ініціалізовано' 
+      });
+    }
+    
+    webhookServiceInstance.updateConfig(config);
+    
+    res.json({ 
+      success: true, 
+      message: 'Конфігурація webhook оновлена',
+      config: webhookServiceInstance.getStatus()
+    });
+  } catch (error) {
+    console.error('Error updating webhook config:', error);
+    res.status(500).json({ error: 'Помилка оновлення конфігурації webhook' });
+  }
+});
+
 // Graceful shutdown
 process.on('SIGINT', () => {
   pool.end();
@@ -289,15 +404,15 @@ async function startServer() {
     });
 
     // Запускаємо Telegram бота (якщо є токен)
-    console.log('🔍🔍🔍 Перевіряємо наявність токена...');
-    console.log('🔍🔍🔍 process.env.TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN ? 'ПРИСУТНІЙ' : 'ВІДСУТНІЙ');
-    console.log('🔍🔍🔍 Довжина токена в server.js:', process.env.TELEGRAM_BOT_TOKEN ? process.env.TELEGRAM_BOT_TOKEN.length : 0);
-    
     if (process.env.TELEGRAM_BOT_TOKEN) {
-      console.log('🔍🔍🔍 Токен присутній, створюємо новий екземпляр бота...');
+      console.log('🔍 Створюємо новий екземпляр бота...');
       const bot = new SkillKlanBot();
-      console.log('🔍🔍🔍 Екземпляр бота створено, запускаємо...');
+      console.log('🔍 Екземпляр бота створено, запускаємо...');
       await bot.start();
+      
+      // Зберігаємо посилання на webhookService для API управління
+      webhookServiceInstance = bot.webhookService;
+      console.log('🔧 WebhookService посилання збережено для API управління');
       
       // Запускаємо cron job для нагадувань
       bot.reminderService.startReminderCron();

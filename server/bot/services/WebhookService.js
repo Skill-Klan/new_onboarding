@@ -1,37 +1,62 @@
 // Сервіс для відправки повідомлень в Discord через webhook
 const axios = require('axios');
+const webhookConfig = require('../../config/webhook.config');
 
 class WebhookService {
   constructor() {
-    this.webhookUrl = 'https://discord.com/api/webhooks/1412903925694332998/XDyrZ3asQ80y_NAdv_3lErNylvFUTru2pjZyzpjAm38XLs102DQ-LnUEZXNiPtmUuPWm';
-    this.colors = {
-      info: 0x3498db,      // Синій - інформаційні повідомлення
-      success: 0x2ecc71,   // Зелений - успішні дії
-      warning: 0xf39c12,   // Помаранчевий - попередження
-      danger: 0xe74c3c,    // Червоний - критичні події
-      primary: 0x9b59b6    // Фіолетовий - основні події
-    };
+    this.config = webhookConfig;
+    this.webhookUrl = this.config.webhookUrl;
+    this.colors = this.config.colors;
+    this.enabled = this.config.enabled;
+    this.timeout = this.config.timeout;
+    this.notifications = this.config.notifications;
+    this.logging = this.config.logging;
+    
+    // Логування початкової конфігурації
+    if (this.logging.enabled) {
+      console.log('🔧 WebhookService: Конфігурація завантажена');
+      console.log(`🔧 WebhookService: Webhook ${this.enabled ? 'увімкнено' : 'вимкнено'}`);
+      console.log(`🔧 WebhookService: URL: ${this.webhookUrl ? 'встановлено' : 'не встановлено'}`);
+    }
   }
 
   /**
    * Відправка повідомлення в Discord
    */
   async sendMessage(embed) {
+    // Перевіряємо, чи увімкнено webhook
+    if (!this.enabled) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.sendMessage: Webhook вимкнено, повідомлення не відправляється');
+      }
+      return true; // Повертаємо true, щоб не впливати на роботу бота
+    }
+
+    // Перевіряємо наявність URL
+    if (!this.webhookUrl) {
+      console.warn('⚠️ WebhookService.sendMessage: Webhook URL не встановлено');
+      return false;
+    }
+
     try {
       const payload = {
         embeds: [embed]
       };
 
-      console.log('🔍🔍🔍 WebhookService.sendMessage: відправляємо в Discord:', JSON.stringify(payload, null, 2));
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔍 WebhookService.sendMessage: відправляємо в Discord:', JSON.stringify(payload, null, 2));
+      }
 
       const response = await axios.post(this.webhookUrl, payload, {
         headers: {
           'Content-Type': 'application/json'
         },
-        timeout: 10000 // 10 секунд таймаут
+        timeout: this.timeout
       });
 
-      console.log('✅ WebhookService.sendMessage: повідомлення відправлено в Discord, статус:', response.status);
+      if (this.logging.enabled) {
+        console.log('✅ WebhookService.sendMessage: повідомлення відправлено в Discord, статус:', response.status);
+      }
       return true;
     } catch (error) {
       console.error('❌ WebhookService.sendMessage: помилка відправки в Discord:', error.message);
@@ -47,6 +72,14 @@ class WebhookService {
    * Повідомлення про початок взаємодії з ботом
    */
   async notifyUserStarted(userData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.userStarted) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyUserStarted: Повідомлення про початок взаємодії вимкнено');
+      }
+      return true;
+    }
+
     const embed = {
       title: '🚀 Новий користувач почав взаємодію з ботом',
       color: this.colors.info,
@@ -75,6 +108,14 @@ class WebhookService {
    * Повідомлення про готовність користувача спробувати
    */
   async notifyUserReady(userData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.userReady) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyUserReady: Повідомлення про готовність вимкнено');
+      }
+      return true;
+    }
+
     const embed = {
       title: '🚀 Користувач готовий спробувати',
       color: this.colors.info,
@@ -108,6 +149,14 @@ class WebhookService {
    * Повідомлення про надання контактних даних
    */
   async notifyContactProvided(userData, contactData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.contactProvided) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyContactProvided: Повідомлення про контакти вимкнено');
+      }
+      return true;
+    }
+
     const embed = {
       title: '📞 Користувач надав контактні дані',
       color: this.colors.success,
@@ -141,6 +190,14 @@ class WebhookService {
    * Повідомлення про відправку тестового завдання
    */
   async notifyTaskSent(userData, taskData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.taskSent) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyTaskSent: Повідомлення про відправку завдання вимкнено');
+      }
+      return true;
+    }
+
     const professionName = userData.selectedProfession === 'QA' ? 'QA Engineer' : 'Business Analyst';
     const deadline = new Date(userData.taskDeadline);
     const deadlineTimestamp = Math.floor(deadline.getTime() / 1000);
@@ -178,6 +235,14 @@ class WebhookService {
    * Повідомлення про залишок 1 дня до дедлайну
    */
   async notifyDeadlineWarning(userData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.deadlineWarning) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyDeadlineWarning: Повідомлення про попередження дедлайну вимкнено');
+      }
+      return true;
+    }
+
     const professionName = userData.selectedProfession === 'QA' ? 'QA Engineer' : 'Business Analyst';
     const deadline = new Date(userData.taskDeadline);
     const deadlineTimestamp = Math.floor(deadline.getTime() / 1000);
@@ -215,6 +280,14 @@ class WebhookService {
    * Повідомлення про останній день дедлайну
    */
   async notifyDeadlineToday(userData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.deadlineToday) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyDeadlineToday: Повідомлення про останній день дедлайну вимкнено');
+      }
+      return true;
+    }
+
     const professionName = userData.selectedProfession === 'QA' ? 'QA Engineer' : 'Business Analyst';
     const deadline = new Date(userData.taskDeadline);
     const deadlineTimestamp = Math.floor(deadline.getTime() / 1000);
@@ -252,6 +325,14 @@ class WebhookService {
    * Повідомлення про завершення завдання користувачем
    */
   async notifyTaskCompleted(userData) {
+    // Перевіряємо, чи увімкнено це повідомлення
+    if (!this.notifications.taskCompleted) {
+      if (this.logging.enabled && this.logging.logLevel === 'debug') {
+        console.log('🔧 WebhookService.notifyTaskCompleted: Повідомлення про завершення завдання вимкнено');
+      }
+      return true;
+    }
+
     const professionName = userData.selectedProfession === 'QA' ? 'QA Engineer' : 'Business Analyst';
     
     // Розраховуємо час виконання
@@ -301,6 +382,59 @@ class WebhookService {
     };
 
     return await this.sendMessage(embed);
+  }
+
+  /**
+   * Оновлення конфігурації webhook
+   */
+  updateConfig(newConfig) {
+    this.config = { ...this.config, ...newConfig };
+    this.enabled = this.config.enabled;
+    this.webhookUrl = this.config.webhookUrl;
+    this.timeout = this.config.timeout;
+    this.notifications = this.config.notifications;
+    this.logging = this.config.logging;
+    
+    if (this.logging.enabled) {
+      console.log('🔧 WebhookService: Конфігурація оновлена');
+      console.log(`🔧 WebhookService: Webhook ${this.enabled ? 'увімкнено' : 'вимкнено'}`);
+    }
+  }
+
+  /**
+   * Увімкнення/вимкнення webhook
+   */
+  setEnabled(enabled) {
+    this.enabled = enabled;
+    if (this.logging.enabled) {
+      console.log(`🔧 WebhookService: Webhook ${enabled ? 'увімкнено' : 'вимкнено'}`);
+    }
+  }
+
+  /**
+   * Увімкнення/вимкнення конкретного типу повідомлень
+   */
+  setNotificationEnabled(type, enabled) {
+    if (this.notifications.hasOwnProperty(type)) {
+      this.notifications[type] = enabled;
+      if (this.logging.enabled) {
+        console.log(`🔧 WebhookService: Повідомлення ${type} ${enabled ? 'увімкнено' : 'вимкнено'}`);
+      }
+    } else {
+      console.warn(`⚠️ WebhookService: Невідомий тип повідомлення: ${type}`);
+    }
+  }
+
+  /**
+   * Отримання поточного статусу webhook
+   */
+  getStatus() {
+    return {
+      enabled: this.enabled,
+      webhookUrl: this.webhookUrl ? 'встановлено' : 'не встановлено',
+      notifications: this.notifications,
+      logging: this.logging
+    };
   }
 }
 
