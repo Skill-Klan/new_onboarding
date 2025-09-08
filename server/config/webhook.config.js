@@ -3,7 +3,7 @@
 
 module.exports = {
   // Тогл для увімкнення/вимкнення webhook повідомлень
-  enabled: true,
+  enabled: false,
   
   // URL Discord webhook
   webhookUrl: process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1412903925694332998/XDyrZ3asQ80y_NAdv_3lErNylvFUTru2pjZyzpjAm38XLs102DQ-LnUEZXNiPtmUuPWm',
