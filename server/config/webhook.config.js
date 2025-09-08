@@ -6,7 +6,7 @@ module.exports = {
   enabled: false,
   
   // URL Discord webhook
-  webhookUrl: process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1412903925694332998/XDyrZ3asQ80y_NAdv_3lErNylvFUTru2pjZyzpjAm38XLs102DQ-LnUEZXNiPtmUuPWm',
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN',
   
   // Таймаут для webhook запитів (в мілісекундах)
   timeout: 10000,

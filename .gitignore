@@ -15,6 +15,28 @@ miniapp/.vite/
 .env.test.local
 .env.production.local
 
+# Sensitive configuration files
+config/secrets.js
+config/production.js
+**/secrets/
+**/private/
+
+# API keys and tokens
+**/api-keys.json
+**/tokens.json
+**/credentials.json
+
+# Database dumps
+*.sql
+*.db
+*.sqlite
+
+# Backup files
+backup/
+backups/
+*.backup
+*.bak
+
 # IDE
 .vscode/
 .idea/
