@@ -9,7 +9,8 @@
 
 const BaseFlow = require('./BaseFlow');
 const { BotStep, Profession } = require('../types');
-const BotConfig = require('../config/BotConfig');
+const MessageTemplates = require('../templates/messages');
+const KeyboardTemplates = require('../templates/keyboards');
 
 class OnboardingFlow extends BaseFlow {
   constructor(databaseService, webhookService) {
@@ -152,33 +153,52 @@ class OnboardingFlow extends BaseFlow {
     try {
       // Витягуємо професію з callback_data
       const profession = this.extractProfession(callbackData);
+      this.log('Витягнута професія:', profession);
       
       if (!profession) {
+        this.log('❌ Професія не знайдена, відправляємо помилку');
         await this.safeReply(ctx, MessageTemplates.getErrorMessage());
         return;
       }
       
       // Отримуємо користувача
       const userState = ctx.state.userState;
+      this.log('Стан користувача:', userState);
+      
       if (!userState) {
+        this.log('❌ Стан користувача не знайдено, відправляємо помилку');
         await this.safeReply(ctx, MessageTemplates.getErrorMessage());
         return;
       }
       
       // Оновлюємо професію
+      this.log('Оновлюємо професію в БД...');
       await this.userStateService.setProfession(userState.telegramId, profession);
-      this.log('Професія збережена в БД:', profession);
+      this.log('✅ Професія збережена в БД:', profession);
+      
+      // Оновлюємо крок користувача на PROFESSION_SELECTION
+      this.log('Оновлюємо крок користувача...');
+      await this.userStateService.updateStep(userState.telegramId, BotStep.PROFESSION_SELECTION);
+      this.log('✅ Крок користувача оновлено на PROFESSION_SELECTION');
       
       // Відправляємо опис професії
+      this.log('Отримуємо опис професії...');
       const description = this.getProfessionDescription(profession);
+      this.log('Опис професії:', description.substring(0, 100) + '...');
+      
+      this.log('Отримуємо клавіатуру...');
       const keyboard = KeyboardTemplates.getReadyToTryKeyboard();
+      this.log('Клавіатура:', JSON.stringify(keyboard, null, 2));
       
+      this.log('Відправляємо повідомлення з клавіатурою...');
       await this.safeReply(ctx, description, keyboard);
+      this.log('✅ Повідомлення відправлено успішно');
       
-      this.log('Професія обрана успішно:', profession);
+      this.log('✅ Професія обрана успішно:', profession);
       
     } catch (error) {
       console.error('❌ OnboardingFlow: Помилка вибору професії:', error);
+      console.error('❌ Stack trace:', error.stack);
       await this.safeReply(ctx, MessageTemplates.getErrorMessage());
     }
   }

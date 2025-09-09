@@ -15,6 +15,35 @@ class DatabaseService {
   }
 
   /**
+   * Підключення до бази даних
+   */
+  async connect() {
+    try {
+      console.log('🔍 DatabaseService: Тестування з\'єднання з БД...');
+      const client = await this.pool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      console.log('✅ DatabaseService: З\'єднання з БД успішне');
+    } catch (error) {
+      console.error('❌ DatabaseService: Помилка з\'єднання з БД:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Відключення від бази даних
+   */
+  async disconnect() {
+    try {
+      await this.pool.end();
+      console.log('✅ DatabaseService: Відключення від БД успішне');
+    } catch (error) {
+      console.error('❌ DatabaseService: Помилка відключення від БД:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Отримання користувача за Telegram ID
    */
   async getUserByTelegramId(telegramId) {
