@@ -93,24 +93,53 @@ class OnboardingFlow extends BaseFlow {
     try {
       // Отримуємо інформацію про користувача
       const userInfo = this.getUserInfo(ctx);
+      this.log('Отримано інформацію про користувача:', userInfo);
       
-      // Створюємо або оновлюємо користувача в БД
-      const userState = await this.getOrCreateUser(userInfo);
+      // Оновлюємо інформацію про користувача в стані та зберігаємо в БД
+      const userState = ctx.state.userState;
+      if (userState) {
+        userState.username = userInfo.username;
+        userState.userId = userInfo.id;
+        
+        // Зберігаємо оновлену інформацію в БД
+        await this.userStateService.updateState(userState.telegramId, {
+          username: userInfo.username,
+          userId: userInfo.id
+        });
+        this.log('Інформація користувача збережена в БД');
+      }
+      
+      // Відправляємо webhook про початок взаємодії
+      try {
+        const webhookData = {
+          telegramId: userState?.telegramId || userInfo.id,
+          username: userInfo.username,
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName
+        };
+        await this.webhookService.notifyUserStarted(webhookData);
+        this.log('Webhook про початок взаємодії відправлено');
+      } catch (webhookError) {
+        console.error('❌ OnboardingFlow: Помилка відправки webhook:', webhookError);
+        // Не зупиняємо виконання через помилку webhook
+      }
       
       // Відправляємо привітальне повідомлення
-      const message = BotConfig.getWelcomeMessage();
-      const keyboard = BotConfig.getProfessionKeyboard();
+      const message = MessageTemplates.getWelcomeMessage();
+      const keyboard = KeyboardTemplates.getProfessionKeyboard();
       
       await this.safeReply(ctx, message, keyboard);
       
       // Оновлюємо крок користувача
-      await this.updateUserStep(userState.telegramId, BotStep.PROFESSION_SELECTION);
+      if (userState) {
+        await this.updateUserStep(userState.telegramId, BotStep.PROFESSION_SELECTION);
+      }
       
       this.log('Команда /start оброблена успішно');
       
     } catch (error) {
       console.error('❌ OnboardingFlow: Помилка обробки /start:', error);
-      await this.handleError(ctx, error);
+      await this.safeReply(ctx, MessageTemplates.getErrorMessage());
     }
   }
 
@@ -122,21 +151,27 @@ class OnboardingFlow extends BaseFlow {
     
     try {
       // Витягуємо професію з callback_data
-      const profession = callbackData.replace('profession_', '');
+      const profession = this.extractProfession(callbackData);
       
-      if (!Object.values(Profession).includes(profession)) {
-        throw new Error(`Невідома професія: ${profession}`);
+      if (!profession) {
+        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+        return;
       }
       
       // Отримуємо користувача
-      const userState = await this.getUserByTelegramId(ctx.from.id);
+      const userState = ctx.state.userState;
+      if (!userState) {
+        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+        return;
+      }
       
       // Оновлюємо професію
-      await this.updateUserProfession(userState.telegramId, profession);
+      await this.userStateService.setProfession(userState.telegramId, profession);
+      this.log('Професія збережена в БД:', profession);
       
       // Відправляємо опис професії
       const description = this.getProfessionDescription(profession);
-      const keyboard = BotConfig.getReadyToTryKeyboard();
+      const keyboard = KeyboardTemplates.getReadyToTryKeyboard();
       
       await this.safeReply(ctx, description, keyboard);
       
@@ -144,7 +179,7 @@ class OnboardingFlow extends BaseFlow {
       
     } catch (error) {
       console.error('❌ OnboardingFlow: Помилка вибору професії:', error);
-      await this.handleError(ctx, error);
+      await this.safeReply(ctx, MessageTemplates.getErrorMessage());
     }
   }
 
@@ -156,31 +191,57 @@ class OnboardingFlow extends BaseFlow {
     
     try {
       // Отримуємо користувача
-      const userState = await this.getUserByTelegramId(ctx.from.id);
+      const userState = ctx.state.userState;
+      if (!userState) {
+        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+        return;
+      }
       
       if (!userState.selectedProfession) {
-        await this.safeReply(ctx, BotConfig.getErrorMessage());
+        this.log('Професія не вибрана');
+        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
         return;
       }
       
       // Перевіряємо наявність контакту
-      const hasContact = await this.hasUserContact(userState.telegramId);
-      
+      this.log('Перевіряємо наявність контакту...');
+      const hasContact = await this.contactService.hasContact(userState.telegramId);
+      this.log('hasContact =', hasContact);
+
       if (hasContact) {
-        // Якщо контакт є, одразу переходимо до завдання
+        // Якщо контакт вже є, одразу надсилаємо завдання
+        this.log('Контакт вже є, надсилаємо завдання');
         await this.safeReply(ctx, 'Надсилаю для тебе тестове завдання.');
-        await this.transitionToTaskFlow(ctx, userState);
+        
+        // Оновлюємо крок на TASK_DELIVERY
+        await this.userStateService.updateStep(userState.telegramId, BotStep.TASK_DELIVERY);
+        
+        // Відправляємо завдання
+        const TaskHandler = require('../handlers/TaskHandler');
+        const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
+        await taskHandler.execute(ctx, userState);
       } else {
         // Якщо контакту немає, запитуємо його
-        await this.safeReply(ctx, BotConfig.getContactRequestMessage(), BotConfig.getContactKeyboard());
-        await this.updateUserStep(userState.telegramId, BotStep.CONTACT_REQUEST);
+        this.log('Контакт відсутній, запитуємо');
+        
+        // Оновлюємо крок користувача
+        this.log('Оновлюємо крок на CONTACT_REQUEST');
+        await this.userStateService.updateStep(userState.telegramId, BotStep.CONTACT_REQUEST);
+
+        // Відправляємо запит контакту
+        this.log('Відправляємо запит контакту');
+        await this.safeReply(
+          ctx, 
+          MessageTemplates.getContactRequestMessage(),
+          KeyboardTemplates.getContactKeyboard()
+        );
       }
       
       this.log('Готовність спробувати оброблена успішно');
       
     } catch (error) {
       console.error('❌ OnboardingFlow: Помилка готовності спробувати:', error);
-      await this.handleError(ctx, error);
+      await this.safeReply(ctx, MessageTemplates.getErrorMessage());
     }
   }
 
@@ -303,15 +364,29 @@ class OnboardingFlow extends BaseFlow {
   }
 
   /**
+   * Витягування професії з callback_data
+   */
+  extractProfession(callbackData) {
+    if (callbackData === 'profession_QA') {
+      return Profession.QA;
+    } else if (callbackData === 'profession_BA') {
+      return Profession.BA;
+    }
+    return null;
+  }
+
+  /**
    * Отримання опису професії
    */
   getProfessionDescription(profession) {
-    const descriptions = {
-      [Profession.QA]: 'QA (Quality Assurance) - це тестування програмного забезпечення. Ти будеш перевіряти якість продукту, знаходити баги та забезпечувати стабільність роботи додатків.',
-      [Profession.BA]: 'Business Analyst - це аналіз бізнес-процесів та вимог. Ти будеш спілкуватися з клієнтами, збирати вимоги та перекладати їх на технічні завдання для розробників.'
-    };
-    
-    return descriptions[profession] || 'Невідома професія';
+    switch (profession) {
+      case Profession.QA:
+        return MessageTemplates.getQADescription();
+      case Profession.BA:
+        return MessageTemplates.getBADescription();
+      default:
+        return MessageTemplates.getErrorMessage();
+    }
   }
 
   /**
