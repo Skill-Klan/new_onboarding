@@ -45,3 +45,4 @@ docker compose up -d
 - ✅ **Надійність** - GitHub Pages для FAQ
 - ✅ **Масштабованість** - окремі сервіси
 - ✅ **Безпека** - HTTPS для FAQ
+Зміна в README
