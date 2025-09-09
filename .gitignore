@@ -21,6 +21,11 @@ config/production.js
 **/secrets/
 **/private/
 
+# Protected configuration files (DO NOT EDIT)
+server/.env
+server/config/webhook.config.js
+server/config/production.config.js
+
 # API keys and tokens
 **/api-keys.json
 **/tokens.json

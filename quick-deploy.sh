@@ -57,8 +57,13 @@ bot.telegram.getMe().then(me => {
 });
 \""
 
+# 6. Захист конфігураційних файлів
+echo "🔒 Захист конфігураційних файлів..."
+ssh $SERVER_USER@$SERVER_IP "cd $PROJECT_PATH && chmod 444 server/.env server/config/webhook.config.js docker-compose.yml deploy.sh 2>/dev/null || true"
+
 echo ""
 echo "🎉 Деплой завершено!"
 echo "🌐 API: http://$SERVER_IP:3001/api/health"
 echo "📱 Frontend: http://$SERVER_IP:8080"
 echo "🤖 Bot: @Skill_Klan_bot"
+echo "🔒 Конфігураційні файли захищено від редагування"
