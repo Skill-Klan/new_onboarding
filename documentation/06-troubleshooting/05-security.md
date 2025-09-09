@@ -18,7 +18,7 @@
 ```javascript
 // ❌ НІКОЛИ не робіть так!
 const botToken = '7239298348:AAG3XbhNRGRzRR7IsQorlDOnyIngCDWKJRU';
-const webhookUrl = 'https://discord.com/api/webhooks/1412903925694332998/XDyrZ3asQ80y_NAdv_3lErNylvFUTru2pjZyzpjAm38XLs102DQ-LnUEZXNiPtmUuPWm';
+const webhookUrl = 'https://discord.com/api/webhooks/1414587701704790136/bbJ3gjSix-sttE1Q2cLnpMtvFt44Pxmv7xVxKl-QAoQuuH_npRv8pU5sSugtY7vz9BXM';
 ```
 
 ### Приклади ПРАВИЛЬНОГО:

@@ -43,6 +43,9 @@ DB_PASSWORD=SkillKlan2024
 # Discord Webhook
 DISCORD_WEBHOOK_URL=your_discord_webhook_url_here
 
+# Приклад реального webhook (НЕ комітити в git!)
+# DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1414587701704790136/bbJ3gjSix-sttE1Q2cLnpMtvFt44Pxmv7xVxKl-QAoQuuH_npRv8pU5sSugtY7vz9BXM
+
 # Server
 NODE_ENV=production
 PORT=3001

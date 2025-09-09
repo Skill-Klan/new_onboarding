@@ -39,6 +39,12 @@ Discord Webhook інтеграція забезпечує автоматичні
 
 ## Конфігурація
 
+### Поточний стан
+- **Webhook URL:** Налаштовано в змінних середовища
+- **Статус:** Вимкнений за замовчуванням (enabled: false)
+- **Канал:** Onboarding (#1412903669363507221)
+- **Сервер:** SkillKlan (1346144760636637344)
+
 ### Файл конфігурації
 **Розташування:** `server/config/webhook.config.js`
 
@@ -252,17 +258,33 @@ curl -X POST http://localhost:3001/api/webhook/config \
 ```env
 # В .env файлі
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_URL
+
+# Приклад реального webhook (НЕ комітити в git!)
+# DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1414587701704790136/bbJ3gjSix-sttE1Q2cLnpMtvFt44Pxmv7xVxKl-QAoQuuH_npRv8pU5sSugtY7vz9BXM
 ```
 
-### 3. Тестування webhook
+### 3. Увімкнення webhook
 ```bash
-# Тестування відправки
-curl -X POST http://localhost:3001/api/webhook/toggle \
+# Увімкнення webhook (коли потрібно)
+curl -X POST http://192.168.88.121:3001/api/webhook/toggle \
   -H "Content-Type: application/json" \
   -d '{"enabled": true}'
 
+# Вимкнення webhook
+curl -X POST http://192.168.88.121:3001/api/webhook/toggle \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": false}'
+
 # Перевірка статусу
-curl http://localhost:3001/api/webhook/status
+curl http://192.168.88.121:3001/api/webhook/status
+```
+
+### 4. Тестування webhook
+```bash
+# Тестування відправки повідомлення
+curl -X POST http://192.168.88.121:3001/api/webhook/notification \
+  -H "Content-Type: application/json" \
+  -d '{"type": "userStarted", "enabled": true}'
 ```
 
 ## Обробка помилок
