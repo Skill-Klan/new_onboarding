@@ -214,52 +214,92 @@ class OnboardingFlow extends BaseFlow {
    * Отримання або створення користувача
    */
   async getOrCreateUser(userInfo) {
-    // Тут має бути логіка роботи з БД
-    // Поки що повертаємо заглушку
-    return {
-      telegramId: userInfo.id,
-      username: userInfo.username,
-      currentStep: BotStep.START,
-      selectedProfession: null
-    };
+    try {
+      // Перевіряємо чи є користувач в БД
+      const existingUser = await this.databaseService.getUserByTelegramId(userInfo.id);
+      
+      if (existingUser) {
+        this.log('Користувач знайдено в БД');
+        return existingUser;
+      }
+      
+      // Створюємо нового користувача
+      this.log('Створюємо нового користувача');
+      const newUser = await this.databaseService.createUser({
+        telegram_id: userInfo.id,
+        username: userInfo.username,
+        first_name: userInfo.first_name,
+        last_name: userInfo.last_name,
+        current_step: BotStep.START,
+        selected_profession: null,
+        contact_data: null,
+        task_sent: false,
+        last_activity: new Date(),
+        created_at: new Date()
+      });
+      
+      return newUser;
+    } catch (error) {
+      console.error('❌ OnboardingFlow: Помилка getOrCreateUser:', error);
+      throw error;
+    }
   }
 
   /**
    * Отримання користувача за Telegram ID
    */
   async getUserByTelegramId(telegramId) {
-    // Тут має бути логіка роботи з БД
-    // Поки що повертаємо заглушку
-    return {
-      telegramId: telegramId,
-      currentStep: BotStep.PROFESSION_SELECTION,
-      selectedProfession: null
-    };
+    try {
+      return await this.databaseService.getUserByTelegramId(telegramId);
+    } catch (error) {
+      console.error('❌ OnboardingFlow: Помилка getUserByTelegramId:', error);
+      throw error;
+    }
   }
 
   /**
    * Оновлення кроку користувача
    */
   async updateUserStep(telegramId, step) {
-    this.log('Оновлення кроку користувача:', step);
-    // Тут має бути логіка оновлення в БД
+    try {
+      this.log('Оновлення кроку користувача:', step);
+      await this.databaseService.updateUser(telegramId, { 
+        current_step: step,
+        last_activity: new Date()
+      });
+    } catch (error) {
+      console.error('❌ OnboardingFlow: Помилка updateUserStep:', error);
+      throw error;
+    }
   }
 
   /**
    * Оновлення професії користувача
    */
   async updateUserProfession(telegramId, profession) {
-    this.log('Оновлення професії користувача:', profession);
-    // Тут має бути логіка оновлення в БД
+    try {
+      this.log('Оновлення професії користувача:', profession);
+      await this.databaseService.updateUser(telegramId, { 
+        selected_profession: profession,
+        last_activity: new Date()
+      });
+    } catch (error) {
+      console.error('❌ OnboardingFlow: Помилка updateUserProfession:', error);
+      throw error;
+    }
   }
 
   /**
    * Перевірка наявності контакту
    */
   async hasUserContact(telegramId) {
-    // Тут має бути логіка перевірки в БД
-    // Поки що повертаємо false
-    return false;
+    try {
+      const contact = await this.databaseService.getContactByUserId(telegramId);
+      return contact !== null;
+    } catch (error) {
+      console.error('❌ OnboardingFlow: Помилка hasUserContact:', error);
+      return false;
+    }
   }
 
   /**

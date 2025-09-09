@@ -77,9 +77,7 @@ class AuthMiddleware extends BaseMiddleware {
    */
   async getUserFromDatabase(telegramId) {
     try {
-      // Тут має бути реальний запит до БД
-      // Поки що повертаємо заглушку
-      return null;
+      return await this.databaseService.getUserByTelegramId(telegramId);
     } catch (error) {
       console.error('❌ AuthMiddleware: Помилка отримання користувача:', error);
       return null;
@@ -91,17 +89,18 @@ class AuthMiddleware extends BaseMiddleware {
    */
   async createUser(userInfo) {
     try {
-      // Тут має бути реальний запит до БД
-      // Поки що повертаємо заглушку
-      return {
-        id: userInfo.id,
+      return await this.databaseService.createUser({
         telegram_id: userInfo.id,
         username: userInfo.username,
         first_name: userInfo.first_name,
         last_name: userInfo.last_name,
         current_step: 'start',
+        selected_profession: null,
+        contact_data: null,
+        task_sent: false,
+        last_activity: new Date(),
         created_at: new Date()
-      };
+      });
     } catch (error) {
       console.error('❌ AuthMiddleware: Помилка створення користувача:', error);
       throw error;

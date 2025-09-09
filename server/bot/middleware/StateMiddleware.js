@@ -55,16 +55,7 @@ class StateMiddleware extends BaseMiddleware {
    */
   async loadUserState(telegramId) {
     try {
-      // Тут має бути реальний запит до БД
-      // Поки що повертаємо заглушку
-      return {
-        telegram_id: telegramId,
-        current_step: BotStep.START,
-        selected_profession: null,
-        contact_data: null,
-        task_sent: false,
-        last_activity: new Date()
-      };
+      return await this.databaseService.getUserByTelegramId(telegramId);
     } catch (error) {
       console.error('❌ StateMiddleware: Помилка завантаження стану:', error);
       return null;
@@ -92,11 +83,7 @@ class StateMiddleware extends BaseMiddleware {
   async updateUserState(telegramId, updates) {
     try {
       this.log('Оновлення стану користувача:', updates);
-      
-      // Тут має бути реальний запит до БД
-      // Поки що просто логуємо
-      console.log('Стан користувача оновлено:', { telegramId, updates });
-      
+      await this.databaseService.updateUser(telegramId, updates);
     } catch (error) {
       console.error('❌ StateMiddleware: Помилка оновлення стану:', error);
       throw error;
