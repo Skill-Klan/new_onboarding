@@ -84,18 +84,6 @@ class StartHandler extends BaseHandler {
   }
 
   /**
-   * Валідація стану для команди /start
-   * Дозволяємо виконання на будь-якому кроці
-   */
-  validateState(userState) {
-    console.log('🔍🔍🔍 StartHandler.validateState: ПОЧАТОК');
-    console.log('🔍🔍🔍 StartHandler.validateState: userState =', userState);
-    
-    // Команда /start завжди дозволена
-    return true;
-  }
-
-  /**
    * Отримати інформацію про користувача з контексту
    */
   getUserInfo(ctx) {
