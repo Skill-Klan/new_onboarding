@@ -74,6 +74,7 @@ class ReadyToTryHandler extends BaseHandler {
     console.log('🔍🔍🔍 ReadyToTryHandler.validateState: userState.selectedProfession =', userState?.selectedProfession);
     
     const superValid = super.validateState(userState);
+    // Дозволяємо виконання якщо професія вибрана і крок PROFESSION_SELECTION
     const stepValid = userState.currentStep === BotStep.PROFESSION_SELECTION;
     const professionValid = !!userState.selectedProfession;
     

@@ -93,8 +93,8 @@ class UserStateService {
     
     try {
       const result = await this.updateState(telegramId, { 
-        selectedProfession: profession,
-        currentStep: BotStep.PROFESSION_SELECTION
+        selectedProfession: profession
+        // Не змінюємо крок тут, залишаємо поточний
       });
       console.log('🔍🔍🔍 UserStateService.setProfession: результат =', result);
       return result;

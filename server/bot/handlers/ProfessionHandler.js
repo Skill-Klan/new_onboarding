@@ -90,8 +90,8 @@ class ProfessionHandler extends BaseHandler {
   }
 
   getNextStep() {
-    // Не оновлюємо крок автоматично, бо це робиться в setProfession
-    return null;
+    // Після вибору професії користувач готовий спробувати
+    return BotStep.PROFESSION_SELECTION;
   }
 
   /**
