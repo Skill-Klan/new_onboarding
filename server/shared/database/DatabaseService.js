@@ -129,17 +129,15 @@ class DatabaseService {
     try {
       const query = `
         INSERT INTO bot_users (
-          telegram_id, username, first_name, last_name, current_step, 
+          telegram_id, username, current_step, 
           selected_profession, contact_data, task_sent, last_activity, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `;
       
       const values = [
         userData.telegram_id,
         userData.username || null,
-        userData.first_name || null,
-        userData.last_name || null,
         userData.current_step || 'start',
         userData.selected_profession || null,
         userData.contact_data ? JSON.stringify(userData.contact_data) : null,

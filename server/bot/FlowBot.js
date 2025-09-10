@@ -111,11 +111,17 @@ class FlowBot {
    */
   async handleMessage(ctx) {
     console.log('🔄 FlowBot: Обробка повідомлення...');
+    console.log('🔍 Message text:', ctx.message?.text);
+    console.log('🔍 User ID:', ctx.from?.id);
     
     try {
       // Застосування middleware
-      for (const middleware of this.middleware) {
+      console.log('🔄 FlowBot: Застосування middleware...');
+      for (let i = 0; i < this.middleware.length; i++) {
+        const middleware = this.middleware[i];
+        console.log(`🔄 FlowBot: Middleware ${i + 1}/${this.middleware.length}: ${middleware.constructor.name}`);
         const result = await middleware.process(ctx);
+        console.log(`🔄 FlowBot: Middleware ${middleware.constructor.name} результат:`, result);
         if (!result.continue) {
           console.log('🛑 FlowBot: Middleware зупинив обробку');
           return;
@@ -123,8 +129,13 @@ class FlowBot {
       }
       
       // Пошук відповідного flow
-      for (const flow of this.flows) {
-        if (await flow.canHandle(ctx)) {
+      console.log('🔄 FlowBot: Пошук відповідного flow...');
+      for (let i = 0; i < this.flows.length; i++) {
+        const flow = this.flows[i];
+        console.log(`🔄 FlowBot: Перевірка flow ${i + 1}/${this.flows.length}: ${flow.constructor.name}`);
+        const canHandle = await flow.canHandle(ctx);
+        console.log(`🔄 FlowBot: Flow ${flow.constructor.name} може обробити:`, canHandle);
+        if (canHandle) {
           console.log(`✅ FlowBot: Знайдено flow: ${flow.constructor.name}`);
           await flow.handle(ctx);
           return;

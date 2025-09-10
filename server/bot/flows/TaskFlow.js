@@ -252,13 +252,13 @@ class TaskFlow extends BaseFlow {
     const tasks = {
       'QA': {
         title: 'Тестове завдання QA',
-        description: 'Проаналізуйте функціональність та створіть тест-кейси',
-        deadline: '9 днів'
+        description: '',
+        deadline: ''
       },
       'BA': {
         title: 'Тестове завдання BA',
-        description: 'Проаналізуйте бізнес-процеси та створіть технічне завдання',
-        deadline: '9 днів'
+        description: '',
+        deadline: ''
       }
     };
     

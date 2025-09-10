@@ -120,8 +120,7 @@ class OnboardingFlow extends BaseFlow {
         
         // Зберігаємо оновлену інформацію в БД
         await this.databaseService.updateUser(userState.telegram_id, {
-          username: userInfo.username,
-          userId: userInfo.id
+          username: userInfo.username
         });
         this.log('Інформація користувача збережена в БД');
       }
@@ -277,7 +276,7 @@ class OnboardingFlow extends BaseFlow {
       if (hasContact) {
         // Якщо контакт вже є, одразу надсилаємо завдання
         this.log('Контакт вже є, надсилаємо завдання');
-        await this.safeReply(ctx, 'Надсилаю для тебе тестове завдання.');
+        await this.safeReply(ctx, 'Надсилаю тобі тестове завдання. У тебе є 9 робочих днів, щоб його виконати.\n\nЦе завдання створене не для перевірки знань, а щоб ми побачили, як ти вмієш:\n— швидко вчитись,\n— грамотно шукати інформацію (Google, YouTube),\n— і доводити справу до кінця.\n\n❗️Не використовуй ChatGPT або інші ШІ — вони корисні тільки тоді, коли вже вмієш. Нам важливо побачити саме твій спосіб мислення.');
         
         // Оновлюємо крок на TASK_DELIVERY
         await this.updateUserStep(userState.telegram_id, BotStep.TASK_DELIVERY);

@@ -38,7 +38,7 @@ class KeyboardTemplates {
    */
   static getTaskCompletionKeyboard() {
     return Markup.inlineKeyboard([
-      [Markup.button.callback('Надсилаю завдання 📝', 'submit_task')]
+      [Markup.button.callback('Натисни сюди, коли будеш готовий здати тестове завдання', 'submit_task')]
     ]);
   }
 
