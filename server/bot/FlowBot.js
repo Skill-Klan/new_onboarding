@@ -146,19 +146,30 @@ class FlowBot {
    */
   async handleCallbackQuery(ctx) {
     console.log('🔄 FlowBot: Обробка callback query...');
+    console.log('🔍 Callback data:', ctx.callbackQuery?.data);
+    console.log('🔍 User ID:', ctx.from?.id);
     
     try {
       // Застосування middleware
+      console.log('🔄 FlowBot: Застосування middleware...');
       for (const middleware of this.middleware) {
+        console.log(`🔄 FlowBot: Обробка middleware: ${middleware.constructor.name}`);
         const result = await middleware.process(ctx);
+        console.log(`🔄 FlowBot: Результат middleware:`, result);
         if (!result.continue) {
+          console.log('🔄 FlowBot: Middleware зупинив обробку');
           return;
         }
       }
       
       // Пошук відповідного flow
+      console.log('🔄 FlowBot: Пошук відповідного flow...');
       for (const flow of this.flows) {
-        if (await flow.canHandleCallback(ctx)) {
+        console.log(`🔄 FlowBot: Перевірка flow: ${flow.constructor.name}`);
+        const canHandle = await flow.canHandleCallback(ctx);
+        console.log(`🔄 FlowBot: Може обробити: ${canHandle}`);
+        
+        if (canHandle) {
           console.log(`✅ FlowBot: Знайдено flow для callback: ${flow.constructor.name}`);
           await flow.handleCallback(ctx);
           return;
@@ -171,6 +182,7 @@ class FlowBot {
       
     } catch (error) {
       console.error('❌ FlowBot: Помилка обробки callback:', error);
+      console.error('❌ Stack trace:', error.stack);
       await this.handleError(ctx, error);
     }
   }

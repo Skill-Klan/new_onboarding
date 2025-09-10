@@ -28,17 +28,22 @@ class StateMiddleware extends BaseMiddleware {
         return { continue: true };
       }
       
-      // Завантажуємо стан користувача
-      const userState = await this.loadUserState(ctx.user.telegram_id);
+      // Завантажуємо стан користувача - виправляємо поле
+      const telegramId = ctx.user.telegram_id || ctx.user.id;
+      this.log('Завантаження стану для telegramId:', telegramId);
+      
+      const userState = await this.loadUserState(telegramId);
       
       if (userState) {
         // Додаємо стан в контекст
         ctx.userState = userState;
         this.log('Стан користувача завантажено:', userState.current_step);
+        this.log('ctx.userState встановлено:', ctx.userState);
       } else {
         // Створюємо початковий стан
         ctx.userState = this.createInitialState(ctx.user);
         this.log('Створено початковий стан користувача');
+        this.log('ctx.userState встановлено:', ctx.userState);
       }
       
       return { continue: true, data: { userState: ctx.userState } };
@@ -66,8 +71,9 @@ class StateMiddleware extends BaseMiddleware {
    * Створення початкового стану
    */
   createInitialState(user) {
+    const telegramId = user.telegram_id || user.id;
     return {
-      telegram_id: user.telegram_id,
+      telegram_id: telegramId,
       current_step: BotStep.START,
       selected_profession: null,
       contact_data: null,

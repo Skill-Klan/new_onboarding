@@ -18,7 +18,7 @@ class ContactFlow extends BaseFlow {
   }
 
   async canHandle(ctx) {
-    const userState = ctx.state.userState;
+    const userState = ctx.userState;
     if (!userState) return false;
     
     // Обробляємо тільки контакти на кроці CONTACT_REQUEST
@@ -34,7 +34,7 @@ class ContactFlow extends BaseFlow {
     
     try {
       const contact = ctx.message.contact;
-      const userState = ctx.state.userState;
+      const userState = ctx.userState;
       
       if (!userState) {
         await this.safeReply(ctx, MessageTemplates.getErrorMessage());

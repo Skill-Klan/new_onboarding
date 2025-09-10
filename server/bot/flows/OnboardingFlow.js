@@ -38,19 +38,22 @@ class OnboardingFlow extends BaseFlow {
    */
   async canHandleCallback(ctx) {
     const callbackData = ctx.callbackQuery?.data;
+    this.log('canHandleCallback: callbackData =', callbackData);
+    this.log('canHandleCallback: ctx.callbackQuery =', ctx.callbackQuery);
     
     // Обробляємо вибір професії
     if (callbackData?.startsWith('profession_')) {
-      this.log('Може обробити callback: вибір професії');
+      this.log('✅ Може обробити callback: вибір професії');
       return true;
     }
     
     // Обробляємо готовність спробувати
     if (callbackData === 'ready_to_try') {
-      this.log('Може обробити callback: готовність спробувати');
+      this.log('✅ Може обробити callback: готовність спробувати');
       return true;
     }
     
+    this.log('❌ Не може обробити callback:', callbackData);
     return false;
   }
 
@@ -96,14 +99,27 @@ class OnboardingFlow extends BaseFlow {
       const userInfo = this.getUserInfo(ctx);
       this.log('Отримано інформацію про користувача:', userInfo);
       
+      if (!userInfo) {
+        this.log('❌ Інформація про користувача не знайдена');
+        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+        return;
+      }
+      
+      // Отримуємо або створюємо користувача
+      let userState = ctx.userState;
+      if (!userState) {
+        this.log('⚠️ userState відсутній, створюємо користувача...');
+        userState = await this.getOrCreateUser(userInfo);
+        this.log('Створено/знайдено користувача:', userState);
+      }
+      
       // Оновлюємо інформацію про користувача в стані та зберігаємо в БД
-      const userState = ctx.state.userState;
       if (userState) {
         userState.username = userInfo.username;
         userState.userId = userInfo.id;
         
         // Зберігаємо оновлену інформацію в БД
-        await this.userStateService.updateState(userState.telegramId, {
+        await this.databaseService.updateUser(userState.telegram_id, {
           username: userInfo.username,
           userId: userInfo.id
         });
@@ -113,10 +129,10 @@ class OnboardingFlow extends BaseFlow {
       // Відправляємо webhook про початок взаємодії
       try {
         const webhookData = {
-          telegramId: userState?.telegramId || userInfo.id,
+          telegramId: userState?.telegram_id || userInfo.id,
           username: userInfo.username,
-          firstName: userInfo.firstName,
-          lastName: userInfo.lastName
+          firstName: userInfo.first_name,
+          lastName: userInfo.last_name
         };
         await this.webhookService.notifyUserStarted(webhookData);
         this.log('Webhook про початок взаємодії відправлено');
@@ -133,7 +149,9 @@ class OnboardingFlow extends BaseFlow {
       
       // Оновлюємо крок користувача
       if (userState) {
-        await this.updateUserStep(userState.telegramId, BotStep.PROFESSION_SELECTION);
+        await this.updateUserStep(userState.telegram_id, BotStep.PROFESSION_SELECTION);
+      } else {
+        this.log('⚠️ userState відсутній, не можемо оновити крок');
       }
       
       this.log('Команда /start оброблена успішно');
@@ -148,12 +166,15 @@ class OnboardingFlow extends BaseFlow {
    * Обробка вибору професії
    */
   async handleProfessionSelection(ctx, callbackData) {
-    this.log('Обробка вибору професії:', callbackData);
+    this.log('🔍 handleProfessionSelection: callbackData =', callbackData);
+    this.log('🔍 handleProfessionSelection: ctx.callbackQuery =', ctx.callbackQuery);
+    this.log('🔍 handleProfessionSelection: ctx.state =', ctx.state);
     
     try {
       // Витягуємо професію з callback_data
+      this.log('🔍 Витягуємо професію з callback_data...');
       const profession = this.extractProfession(callbackData);
-      this.log('Витягнута професія:', profession);
+      this.log('🔍 Витягнута професія:', profession);
       
       if (!profession) {
         this.log('❌ Професія не знайдена, відправляємо помилку');
@@ -162,23 +183,40 @@ class OnboardingFlow extends BaseFlow {
       }
       
       // Отримуємо користувача
-      const userState = ctx.state.userState;
-      this.log('Стан користувача:', userState);
+      this.log('🔍 Отримуємо стан користувача...');
+      this.log('🔍 ctx.userState =', ctx.userState);
+      this.log('🔍 ctx.state =', ctx.state);
+      this.log('🔍 ctx =', Object.keys(ctx));
+      let userState = ctx.userState;
+      this.log('🔍 Стан користувача:', userState);
       
       if (!userState) {
-        this.log('❌ Стан користувача не знайдено, відправляємо помилку');
-        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
-        return;
+        this.log('⚠️ Стан користувача не знайдено, створюємо користувача...');
+        const userInfo = this.getUserInfo(ctx);
+        if (userInfo) {
+          userState = await this.getOrCreateUser(userInfo);
+          this.log('Створено/знайдено користувача:', userState);
+        } else {
+          this.log('❌ Не вдалося отримати інформацію про користувача');
+          await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+          return;
+        }
       }
       
       // Оновлюємо професію
-      this.log('Оновлюємо професію в БД...');
-      await this.userStateService.setProfession(userState.telegramId, profession);
+      this.log('🔍 Оновлюємо професію в БД...');
+      await this.databaseService.updateUser(userState.telegram_id, { 
+        selected_profession: profession,
+        last_activity: new Date()
+      });
       this.log('✅ Професія збережена в БД:', profession);
       
       // Оновлюємо крок користувача на PROFESSION_SELECTION
-      this.log('Оновлюємо крок користувача...');
-      await this.userStateService.updateStep(userState.telegramId, BotStep.PROFESSION_SELECTION);
+      this.log('🔍 Оновлюємо крок користувача...');
+      await this.databaseService.updateUser(userState.telegram_id, { 
+        current_step: BotStep.PROFESSION_SELECTION,
+        last_activity: new Date()
+      });
       this.log('✅ Крок користувача оновлено на PROFESSION_SELECTION');
       
       // Відправляємо опис професії
@@ -211,13 +249,21 @@ class OnboardingFlow extends BaseFlow {
     
     try {
       // Отримуємо користувача
-      const userState = ctx.state.userState;
+      let userState = ctx.userState;
       if (!userState) {
-        await this.safeReply(ctx, MessageTemplates.getErrorMessage());
-        return;
+        this.log('⚠️ Стан користувача не знайдено, створюємо користувача...');
+        const userInfo = this.getUserInfo(ctx);
+        if (userInfo) {
+          userState = await this.getOrCreateUser(userInfo);
+          this.log('Створено/знайдено користувача:', userState);
+        } else {
+          this.log('❌ Не вдалося отримати інформацію про користувача');
+          await this.safeReply(ctx, MessageTemplates.getErrorMessage());
+          return;
+        }
       }
       
-      if (!userState.selectedProfession) {
+      if (!userState.selected_profession) {
         this.log('Професія не вибрана');
         await this.safeReply(ctx, MessageTemplates.getErrorMessage());
         return;
@@ -225,7 +271,7 @@ class OnboardingFlow extends BaseFlow {
       
       // Перевіряємо наявність контакту
       this.log('Перевіряємо наявність контакту...');
-      const hasContact = await this.contactService.hasContact(userState.telegramId);
+      const hasContact = await this.hasUserContact(userState.telegram_id);
       this.log('hasContact =', hasContact);
 
       if (hasContact) {
@@ -234,19 +280,19 @@ class OnboardingFlow extends BaseFlow {
         await this.safeReply(ctx, 'Надсилаю для тебе тестове завдання.');
         
         // Оновлюємо крок на TASK_DELIVERY
-        await this.userStateService.updateStep(userState.telegramId, BotStep.TASK_DELIVERY);
+        await this.updateUserStep(userState.telegram_id, BotStep.TASK_DELIVERY);
         
-        // Відправляємо завдання
-        const TaskHandler = require('../handlers/TaskHandler');
-        const taskHandler = new TaskHandler(this.userStateService, this.contactService, this.taskService, this.webhookService);
-        await taskHandler.execute(ctx, userState);
+        // Відправляємо завдання через TaskFlow
+        const TaskFlow = require('./TaskFlow');
+        const taskFlow = new TaskFlow(this.databaseService, this.webhookService);
+        await taskFlow.handleTaskDelivery(ctx, userState);
       } else {
         // Якщо контакту немає, запитуємо його
         this.log('Контакт відсутній, запитуємо');
         
         // Оновлюємо крок користувача
         this.log('Оновлюємо крок на CONTACT_REQUEST');
-        await this.userStateService.updateStep(userState.telegramId, BotStep.CONTACT_REQUEST);
+        await this.updateUserStep(userState.telegram_id, BotStep.CONTACT_REQUEST);
 
         // Відправляємо запит контакту
         this.log('Відправляємо запит контакту');
@@ -283,12 +329,27 @@ class OnboardingFlow extends BaseFlow {
    * Отримання інформації про користувача
    */
   getUserInfo(ctx) {
-    return {
-      id: ctx.from.id,
-      username: ctx.from.username,
-      first_name: ctx.from.first_name,
-      last_name: ctx.from.last_name
+    this.log('getUserInfo: ctx.from =', ctx.from);
+    this.log('getUserInfo: ctx.message =', ctx.message);
+    this.log('getUserInfo: ctx.callbackQuery =', ctx.callbackQuery);
+    
+    const from = ctx.from || ctx.message?.from || ctx.callbackQuery?.from;
+    this.log('getUserInfo: from =', from);
+    
+    if (!from) {
+      this.log('❌ getUserInfo: from не знайдено');
+      return null;
+    }
+    
+    const userInfo = {
+      id: from.id,
+      username: from.username,
+      first_name: from.first_name,
+      last_name: from.last_name
     };
+    
+    this.log('getUserInfo: userInfo =', userInfo);
+    return userInfo;
   }
 
   /**
@@ -387,11 +448,18 @@ class OnboardingFlow extends BaseFlow {
    * Витягування професії з callback_data
    */
   extractProfession(callbackData) {
+    this.log('extractProfession: callbackData =', callbackData);
+    this.log('extractProfession: typeof callbackData =', typeof callbackData);
+    
     if (callbackData === 'profession_QA') {
+      this.log('✅ Знайдено професію QA');
       return Profession.QA;
     } else if (callbackData === 'profession_BA') {
+      this.log('✅ Знайдено професію BA');
       return Profession.BA;
     }
+    
+    this.log('❌ Професія не знайдена для callbackData:', callbackData);
     return null;
   }
 

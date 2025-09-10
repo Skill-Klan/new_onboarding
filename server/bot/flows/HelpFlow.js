@@ -25,7 +25,7 @@ class HelpFlow extends BaseFlow {
     this.log('Обробка команди /help');
     
     try {
-      const message = 'Доступні команди:\n/start - почати спочатку\n/help - показати цю довідку\n\nДля отримання детальної інформації натисніть кнопку "Маєш питання?"';
+      const message = 'Доступні команди:\n/start - почати спочатку\n/help - показати цю довідку\n\nЯкщо маєш питання, звертайся до підтримки.';
       await this.safeReply(ctx, message);
       
       this.log('Команда /help оброблена успішно');

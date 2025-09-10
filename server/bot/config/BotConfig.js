@@ -27,8 +27,7 @@ class BotConfig {
       [
         Markup.button.callback('1️⃣ QA — хочу тестувати!', 'profession_QA'),
         Markup.button.callback('2️⃣ Business Analyst — хочу аналізувати!', 'profession_BA')
-      ],
-      [Markup.button.webApp('❓ Маєш питання? Подивись відповіді', process.env.WEBAPP_URL || 'https://skill-klan.github.io/new_onboarding/')]
+      ]
     ]);
   }
 
@@ -157,7 +156,7 @@ class BotConfig {
 • /help - показати це повідомлення
 • /restart - почати спочатку
 
-❓ Якщо маєш питання, натисни кнопку "Маєш питання?" нижче.`;
+❓ Якщо маєш питання, звертайся до підтримки.`;
   }
 
   /**

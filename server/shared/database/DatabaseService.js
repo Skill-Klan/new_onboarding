@@ -83,6 +83,86 @@ class DatabaseService {
   }
 
   /**
+   * Оновлення користувача
+   */
+  async updateUser(telegramId, updates) {
+    console.log('🔍🔍🔍 DatabaseService.updateUser: ПОЧАТОК');
+    console.log('🔍🔍🔍 DatabaseService.updateUser: telegramId =', telegramId);
+    console.log('🔍🔍🔍 DatabaseService.updateUser: updates =', updates);
+    
+    try {
+      // Створюємо динамічний запит для оновлення
+      const setClause = Object.keys(updates)
+        .map((key, index) => `${key} = $${index + 2}`)
+        .join(', ');
+      
+      const query = `
+        UPDATE bot_users 
+        SET ${setClause}, updated_at = NOW()
+        WHERE telegram_id = $1
+        RETURNING *
+      `;
+      
+      const values = [telegramId, ...Object.values(updates)];
+      
+      console.log('🔍🔍🔍 DatabaseService.updateUser: виконуємо запит...');
+      console.log('🔍🔍🔍 DatabaseService.updateUser: query =', query);
+      console.log('🔍🔍🔍 DatabaseService.updateUser: values =', values);
+      
+      const result = await this.pool.query(query, values);
+      console.log('🔍🔍🔍 DatabaseService.updateUser: результат =', result.rows[0]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('🔍🔍🔍 DatabaseService.updateUser: ПОМИЛКА =', error);
+      return null; // Не кидаємо помилку
+    }
+  }
+
+  /**
+   * Створення користувача
+   */
+  async createUser(userData) {
+    console.log('🔍🔍🔍 DatabaseService.createUser: ПОЧАТОК');
+    console.log('🔍🔍🔍 DatabaseService.createUser: userData =', userData);
+    
+    try {
+      const query = `
+        INSERT INTO bot_users (
+          telegram_id, username, first_name, last_name, current_step, 
+          selected_profession, contact_data, task_sent, last_activity, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *
+      `;
+      
+      const values = [
+        userData.telegram_id,
+        userData.username || null,
+        userData.first_name || null,
+        userData.last_name || null,
+        userData.current_step || 'start',
+        userData.selected_profession || null,
+        userData.contact_data ? JSON.stringify(userData.contact_data) : null,
+        userData.task_sent || false,
+        userData.last_activity || new Date(),
+        userData.created_at || new Date(),
+        new Date()
+      ];
+      
+      console.log('🔍🔍🔍 DatabaseService.createUser: виконуємо запит...');
+      console.log('🔍🔍🔍 DatabaseService.createUser: values =', values);
+      
+      const result = await this.pool.query(query, values);
+      console.log('🔍🔍🔍 DatabaseService.createUser: результат =', result.rows[0]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('🔍🔍🔍 DatabaseService.createUser: ПОМИЛКА =', error);
+      return null; // Не кидаємо помилку
+    }
+  }
+
+  /**
    * Збереження стану користувача
    */
   async saveUserState(userState) {

@@ -30,11 +30,6 @@
                 "text": "2️⃣ Business Analyst — хочу аналізувати!", 
                 "callback_data": "profession_BA",
                 "action": "select_profession"
-              },
-              {
-                "text": "❓ Маєш питання? Подивись відповіді",
-                "web_app": "https://skill-klan.github.io/new_onboarding/",
-                "action": "open_faq_miniapp"
               }
             ]
           },
@@ -222,11 +217,6 @@
           "text": "2️⃣ Business Analyst — хочу аналізувати!",
           "callback_data": "profession_BA", 
           "action": "select_profession"
-        },
-        {
-          "text": "❓ Маєш питання? Подивись відповіді",
-          "web_app": "https://skill-klan.github.io/new_onboarding/",
-          "action": "open_faq_miniapp"
         }
       ]
     },
