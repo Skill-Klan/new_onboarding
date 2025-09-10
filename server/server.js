@@ -4,8 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
-// Імпорт бота
-const SkillKlanBot = require('./bot/bot');
+// Імпорт нового FlowBot
+const FlowBot = require('./bot/FlowBot');
 
 const app = express();
 
@@ -405,17 +405,16 @@ async function startServer() {
 
     // Запускаємо Telegram бота (якщо є токен)
     if (process.env.TELEGRAM_BOT_TOKEN) {
-      console.log('🔍 Створюємо новий екземпляр бота...');
-      const bot = new SkillKlanBot();
-      console.log('🔍 Екземпляр бота створено, запускаємо...');
-      await bot.start();
+      console.log('🔍 Створюємо новий екземпляр FlowBot...');
+      const flowBot = new FlowBot();
+      console.log('🔍 FlowBot створено, запускаємо...');
+      await flowBot.start();
       
       // Зберігаємо посилання на webhookService для API управління
-      webhookServiceInstance = bot.webhookService;
+      webhookServiceInstance = flowBot.webhookService;
       console.log('🔧 WebhookService посилання збережено для API управління');
       
-      // Запускаємо cron job для нагадувань
-      bot.reminderService.startReminderCron();
+      // TODO: Додати cron job для нагадувань в новій архітектурі
       
       console.log('🤖 Telegram bot запущено');
       console.log('⏰ Cron job для нагадувань запущено');
