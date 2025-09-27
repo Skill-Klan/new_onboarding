@@ -1,10 +1,5 @@
 <template>
   <div class="faq-container">
-    <!-- Кнопка назад (умовно) -->
-    <div v-if="canGoBack" class="back-section">
-      <BackArrow />
-    </div>
-    
     <h1 class="faq-title">Часті питання</h1>
     
     <div class="faq-list">
@@ -19,8 +14,8 @@
           @click="toggleCategory(categoryIndex)"
         >
           <h2 class="category-title">
-            <span class="category-icon">{{ isCategoryOpen(categoryIndex) ? '▼' : '▶' }}</span>
             {{ category.category }}
+            <span class="category-icon" :class="{ 'rotated': isCategoryOpen(categoryIndex) }">▼</span>
           </h2>
         </div>
         
@@ -28,20 +23,23 @@
         <div 
           v-show="isCategoryOpen(categoryIndex)"
           class="category-questions"
+          :class="{ 'expanded': isCategoryOpen(categoryIndex) }"
         >
           <div 
             v-for="(item, questionIndex) in category.questions" 
             :key="`${categoryIndex}-${questionIndex}`"
             class="faq-item"
+            :class="{ 'expanded': isItemOpen(categoryIndex, questionIndex) }"
             @click="toggleItem(categoryIndex, questionIndex)"
           >
             <div class="faq-question">
-              <span class="question-icon">{{ isItemOpen(categoryIndex, questionIndex) ? '●' : '○' }}</span>
               <span>{{ item.q }}</span>
+              <span class="question-icon" :class="{ 'rotated': isItemOpen(categoryIndex, questionIndex) }">▼</span>
             </div>
             <div 
               v-show="isItemOpen(categoryIndex, questionIndex)" 
               class="faq-answer"
+              :class="{ 'expanded': isItemOpen(categoryIndex, questionIndex) }"
             >
               {{ item.a }}
             </div>
@@ -53,8 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import BackArrow from '../components/BackArrow.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
 interface FAQQuestion {
   q: string
@@ -72,25 +69,10 @@ const openCategories = ref<Set<number>>(new Set())
 
 // Функція для ініціалізації відкритих категорій
 const initializeOpenCategories = () => {
-  // Відкриваємо всі категорії за замовчуванням
-  faqData.value.forEach((_, index) => {
-    openCategories.value.add(index)
-  })
+  // Всі категорії залишаємо згорнутими за замовчуванням
+  // openCategories.value залишається порожнім Set
 }
 
-// Перевіряємо, чи можна показати кнопку назад
-const canGoBack = computed(() => {
-  // Перевіряємо, чи є попередня сторінка в історії
-  const hasHistory = window.history.length > 1
-  
-  // Перевіряємо, чи прийшли з нашої системи
-  const referrer = document.referrer
-  const currentHost = window.location.host
-  const isInternalNavigation = referrer && referrer.includes(currentHost)
-  
-  // Показуємо кнопку тільки якщо є історія І прийшли з нашої системи
-  return hasHistory && isInternalNavigation
-})
 
 // Завантажити дані з JSON
 const loadFAQData = async () => {
@@ -161,125 +143,247 @@ onMounted(() => {
 <style scoped>
 .faq-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  background: #000000;
   color: #ffffff;
   font-family: system-ui, -apple-system, sans-serif;
-  padding: 20px;
+  padding: 0;
   width: 100%;
   max-width: 100%;
   margin: 0;
   box-sizing: border-box;
 }
 
-.back-section {
-  margin-bottom: 20px;
+/* Заголовок */
+.faq-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  padding: 20px 24px;
+  text-align: left;
+  color: #ffffff;
+  background: #000000;
+  border-bottom: 1px solid #333333;
 }
 
-/* Покращена типографіка для FAQ */
-.faq-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  text-align: center;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+/* Список FAQ */
+.faq-list {
+  background: #000000;
+  border: 1px solid #333333;
+  border-top: none;
 }
 
 .category-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #f3f4f6;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ffffff;
   margin: 0;
-  padding: 1rem 0;
+  padding: 0;
   cursor: pointer;
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .category-icon {
   font-size: 0.8rem;
-  color: #60a5fa;
+  color: #ffffff;
   transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.category-icon.rotated {
+  transform: rotate(180deg);
 }
 
 .category-title:hover {
-  color: #60a5fa;
+  color: #ffffff;
 }
 
 .faq-question {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #e5e7eb;
-  padding: 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #ffffff;
+  padding: 0;
   cursor: pointer;
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .question-icon {
-  font-size: 0.7rem;
-  color: #93c5fd;
-  transition: color 0.2s ease;
+  font-size: 0.8rem;
+  color: #ffffff;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.question-icon.rotated {
+  transform: rotate(180deg);
 }
 
 .faq-question:hover {
-  color: #93c5fd;
+  color: #ffffff;
 }
 
 .faq-answer {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 400;
-  color: #d1d5db;
-  line-height: 1.6;
-  padding: 0.5rem 0 1rem 0;
-  border-left: 3px solid #3b82f6;
-  padding-left: 1rem;
-  margin-left: 0.5rem;
+  color: #ffffff;
+  line-height: 1.5;
+  padding: 12px 0;
+  margin: 0;
+  border-top: 1px solid #333333;
+  margin-top: 12px;
 }
 
-/* Оптимізація для дотику */
+/* Контейнери категорій та питань */
 .category-header {
-  padding: 1rem;
-  margin: 0.5rem 0;
-  background: rgba(31, 41, 55, 0.5);
-  border-radius: 8px;
-  border: 1px solid rgba(75, 85, 99, 0.3);
-  transition: all 0.2s ease;
-  min-height: 48px; /* Мінімальна висота для дотику */
+  padding: 20px 24px;
+  margin: 0;
+  background: #000000;
+  border-bottom: 1px solid #333333;
+  transition: background-color 0.2s ease;
+  min-height: 56px;
   display: flex;
   align-items: center;
 }
 
 .category-header:hover {
-  background: rgba(31, 41, 55, 0.7);
-  border-color: rgba(59, 130, 246, 0.5);
+  background: #111111;
 }
 
 .faq-item {
-  padding: 0.75rem 1rem;
-  margin: 0.25rem 0;
-  background: rgba(17, 24, 39, 0.5);
-  border-radius: 6px;
-  border: 1px solid rgba(55, 65, 81, 0.3);
-  transition: all 0.2s ease;
-  min-height: 44px; /* Мінімальна висота для дотику */
+  padding: 20px 24px;
+  margin: 0;
+  background: #000000;
+  border-bottom: 1px solid #333333;
+  transition: background-color 0.2s ease;
+  min-height: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .faq-item:hover {
-  background: rgba(17, 24, 39, 0.7);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: #111111;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
 }
 
 .category-questions {
-  margin-left: 1rem;
-  padding-left: 1rem;
-  border-left: 2px solid rgba(59, 130, 246, 0.2);
+  margin: 0;
+  padding: 0;
+  border: none;
+  padding-left: 24px;
+}
+
+/* Виділення розгорнутих елементів */
+.category-questions.expanded {
+  background: #1a1a1a;
+}
+
+/* Питання в розгорнутій категорії мають сірий фон */
+.category-questions.expanded .faq-item {
+  background: #1a1a1a;
+}
+
+.category-questions.expanded .faq-item:hover {
+  background: #222222;
+}
+
+.faq-item.expanded {
+  background: #2a2a2a !important;
+}
+
+.faq-item.expanded:hover {
+  background: #333333 !important;
+}
+
+.faq-answer.expanded {
+  background: #2a2a2a;
+  padding: 12px 24px;
+  margin: 0 -24px 0 -24px;
+  border-top: 1px solid #444444;
+}
+
+/* Додаткові стилі для кращого UX */
+.category-header:active,
+.faq-item:active {
+  background: #222222 !important;
+}
+
+/* Адаптивність */
+@media (max-width: 768px) {
+  .faq-title {
+    font-size: 1.25rem;
+    padding: 16px 20px;
+  }
+  
+  .category-header,
+  .faq-item {
+    padding: 16px 20px;
+  }
+  
+  .category-title {
+    font-size: 0.9rem;
+  }
+  
+  .faq-question {
+    font-size: 0.85rem;
+  }
+  
+  .faq-answer {
+    font-size: 0.8rem;
+    padding: 10px 0;
+    margin-top: 10px;
+  }
+  
+  .faq-answer.expanded {
+    padding: 10px 20px;
+    margin: 0 -20px 0 -20px;
+  }
+  
+  .category-questions {
+    padding-left: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .faq-title {
+    font-size: 1.1rem;
+    padding: 14px 16px;
+  }
+  
+  .category-header,
+  .faq-item {
+    padding: 14px 16px;
+  }
+  
+  .category-title {
+    font-size: 0.85rem;
+  }
+  
+  .faq-question {
+    font-size: 0.8rem;
+  }
+  
+  .faq-answer {
+    font-size: 0.75rem;
+  }
+  
+  .faq-answer.expanded {
+    padding: 8px 16px;
+    margin: 0 -16px 0 -16px;
+  }
+  
+  .category-questions {
+    padding-left: 16px;
+  }
 }
 </style>
