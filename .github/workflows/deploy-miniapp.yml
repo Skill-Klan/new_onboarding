@@ -2,11 +2,20 @@ name: Deploy FAQ Mini App to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, refactoring ]
     paths:
       - 'miniapp/**'
       - '.github/workflows/deploy-miniapp.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -33,13 +42,17 @@ jobs:
         cd miniapp
         npm run build
         
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./miniapp/dist
-        cname: skill-klan.github.io
+        path: './miniapp/dist'
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
         
     - name: Create deployment summary
       run: |
@@ -47,10 +60,12 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### ✅ Deployment Status:" >> $GITHUB_STEP_SUMMARY
         echo "- 📱 **FAQ Mini App:** Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
-        echo "- 🌐 **URL:** https://skill-klan.github.io/new_onboarding/faq" >> $GITHUB_STEP_SUMMARY
+        echo "- 🌐 **URL:** https://skill-klan.github.io/new_onboarding/" >> $GITHUB_STEP_SUMMARY
         echo "- 🚀 **Technology:** Vue.js 3 + TypeScript" >> $GITHUB_STEP_SUMMARY
+        echo "- 🎨 **Features:** Dark theme, responsive design, collapsible categories" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📋 Changes:" >> $GITHUB_STEP_SUMMARY
-        echo "- Updated FAQ content and styling" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Recent Changes:" >> $GITHUB_STEP_SUMMARY
+        echo "- Added visual hierarchy with indents for category questions" >> $GITHUB_STEP_SUMMARY
+        echo "- Removed all bot-related code and dependencies" >> $GITHUB_STEP_SUMMARY
         echo "- Optimized for mobile devices" >> $GITHUB_STEP_SUMMARY
-        echo "- Improved user experience" >> $GITHUB_STEP_SUMMARY
+        echo "- Improved user experience with better visual cues" >> $GITHUB_STEP_SUMMARY
