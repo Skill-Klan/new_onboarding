@@ -259,7 +259,7 @@ app.get('/api/students', async (req, res) => {
     const statusFilter = req.query.status; // офер/студент
     
     // Формуємо SQL запит
-    let query = "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
+    let query = "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
     const params = [];
     
     // Додаємо фільтр по ментору
@@ -321,7 +321,7 @@ app.get('/api/students/:id', async (req, res) => {
     
     // Отримуємо студента по phone_number
     const result = await pool.query(
-      "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract FROM users WHERE phone_number = $1 AND (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))",
+      "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username FROM users WHERE phone_number = $1 AND (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))",
       [studentId]
     );
     
@@ -342,8 +342,7 @@ app.get('/api/students/:id', async (req, res) => {
       mentor_name: row.mentor_name || null,
       created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       notes: row.notes || null,
-      discord_username: row.discord_username || null,
-      contract: row.contract || false,
+      discord_username: row.discord_username || null
     };
     
     // Отримуємо контракти (якщо таблиця існує)
@@ -646,11 +645,11 @@ app.put('/api/students/:id', async (req, res) => {
       phone_number: row.phone_number || '',
       current_step: row.current_step || '',
       direction_of_study: row.direction_of_study || null,
+      contract: row.contract || false,
       mentor_name: row.mentor_name || null,
       created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       notes: row.notes || null,
-      discord_username: row.discord_username || null,
-      contract: row.contract || false,
+      discord_username: row.discord_username || null
     };
     
     res.json({
@@ -1010,34 +1009,4 @@ try {
   console.error('⚠️ Не вдалося ініціалізувати endpoint /api/payments/add:', e.message);
 }
 // ===== End add payment record endpoint =====
-
-// ===== Get payment history endpoint =====
-try {
-  const googleSheetsService = require('./googleSheetsService');
-  app.get('/api/payments/history/:studentName', async (req, res) => {
-    try {
-      const { studentName } = req.params;
-      
-      if (!studentName) {
-        return res.status(400).json({ 
-          error: 'Відсутнє ім\'я студента'
-        });
-      }
-      
-      console.log(`📜 Запит на історію оплат для ${studentName}`);
-      const transactions = await googleSheetsService.getPaymentHistory(studentName);
-      
-      res.json({ transactions });
-    } catch (error) {
-      console.error('❌ Помилка отримання історії оплат:', error);
-      res.status(500).json({ 
-        error: 'Помилка отримання історії оплат', 
-        details: error.message 
-      });
-    }
-  });
-} catch (e) {
-  console.error('⚠️ Не вдалося ініціалізувати endpoint /api/payments/history/:studentName:', e.message);
-}
-// ===== End get payment history endpoint =====
 

@@ -159,8 +159,6 @@ class GoogleSheetsService {
       const colTotalGivenUSD = getIndex('всього віддано в доларах');
       const colTotalGivenToSchoolUSD = getIndex('всього віддано школі в доларах');
       const colRemainderSchool = getIndex('залишок школі в доларах');
-      const colRemainderMentor = getIndex('залишок ментору в доларах');
-      const colTotalRemainder = getIndex('загальний залишок до виплати в доларах');
       const colPaymentStatus = getIndex('статус виплат');
 
       const parseNumber = (cell) => {
@@ -183,8 +181,6 @@ class GoogleSheetsService {
         const totalGivenUSD = parseNumber(row[colTotalGivenUSD]);
         const totalGivenToSchoolUSD = parseNumber(row[colTotalGivenToSchoolUSD]);
         const remainderToSchoolUSD = parseNumber(row[colRemainderSchool]);
-        const remainderToMentorUSD = parseNumber(row[colRemainderMentor]);
-        const totalRemainderUSD = parseNumber(row[colTotalRemainder]);
         const paymentStatus = row[colPaymentStatus]?.formattedValue || row[colPaymentStatus]?.effectiveValue?.stringValue || null;
 
         students.push({
@@ -192,8 +188,6 @@ class GoogleSheetsService {
           total_given_usd: totalGivenUSD,
           total_given_to_school_usd: totalGivenToSchoolUSD,
           remainder_to_school_usd: remainderToSchoolUSD,
-          remainder_to_mentor_usd: remainderToMentorUSD,
-          total_remainder_usd: totalRemainderUSD,
           payment_status: paymentStatus
         });
       }
@@ -476,28 +470,28 @@ class GoogleSheetsService {
       const colName = getIndex(["ім'я", "name", "студент"]);
 
 
-      const colTotalUAH = getIndex(["всього віддано в гривнях", "uah", "грн"]);
+      const colTotalUAH = getIndex(["всього віддано", "uah", "грн"]);
 
 
-      const colTotalUSD = getIndex(["всього віддано в доларах", "usd"]);
+      const colTotalUSD = getIndex(["всього віддано", "usd", "долар"]);
 
 
-      const colSchoolUAH = getIndex(["всього віддано школі в гривнях", "школа uah"]);
+      const colSchoolUAH = getIndex(["віддано школі", "школа", "uah"]);
 
 
-      const colSchoolUSD = getIndex(["всього віддано школі в доларах", "школа в доларах"]);
+      const colSchoolUSD = getIndex(["віддано школі", "школа", "usd", "долар"]);
 
 
-      const colRemainderSchool = getIndex(["залишок школі в доларах", "залишок школі"]);
+      const colRemainderSchool = getIndex(["залишок школі", "remainder"]);
 
 
-      const colRemainderMentor = getIndex(["залишок ментору в доларах", "залишок ментору"]);
+      const colRemainderMentor = getIndex(["залишок ментору", "ментор"]);
 
 
-      const colTotalRemainder = getIndex(["загальний залишок до виплати в доларах", "загальний залишок"]);
+      const colTotalRemainder = getIndex(["загальний залишок", "total remainder"]);
 
 
-      const colPaymentStatus = getIndex(["статус виплат", "статус", "status"]);
+      const colPaymentStatus = getIndex(["статус", "status", "розрахувався"]);
 
 
 
@@ -812,202 +806,6 @@ class GoogleSheetsService {
   }
 
 
-  async getPaymentHistory(studentName) {
-    try {
-      console.log(`📜 Завантаження історії оплат для: ${studentName}`);
-
-      if (!this.sheets) {
-        await this.initialize();
-      }
-
-      if (!this.drive) {
-        await this.initialize();
-      }
-
-      // Знаходимо таблицю студента в двох директоріях
-      const folderIds = [
-        '1pQvA4DOfxeuc06VhxvmeZRcX0FCmFww-', // Перша директорія
-        '1AE9vCS6H6oDd2u5EAJ1xmbdTdGdOuoD-'  // Друга директорія
-      ];
-
-      let spreadsheetId = null;
-      
-      for (const folderId of folderIds) {
-        const response = await this.drive.files.list({
-          q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
-          fields: 'files(id, name)',
-          pageSize: 1000
-        });
-
-        const files = response.data.files || [];
-        const matchingFile = files.find(file => 
-          file.name.trim() === studentName.trim() || 
-          file.name.trim().toLowerCase() === studentName.trim().toLowerCase()
-        );
-
-        if (matchingFile) {
-          spreadsheetId = matchingFile.id;
-          console.log(`✅ Знайдено таблицю: ${matchingFile.name} (ID: ${spreadsheetId})`);
-          break;
-        }
-      }
-
-      if (!spreadsheetId) {
-        console.log(`❌ Таблиця для студента "${studentName}" не знайдена`);
-        return [];
-      }
-
-      // Отримуємо назву першого листа
-      const sheetsResponse = await this.sheets.spreadsheets.get({
-        spreadsheetId: spreadsheetId
-      });
-
-      const sheets = sheetsResponse.data.sheets || [];
-      if (sheets.length === 0) {
-        console.log(`❌ Таблиця не містить листів`);
-        return [];
-      }
-
-      const sheetName = sheets[0].properties.title;
-      console.log(`📄 Використовуємо лист: ${sheetName}`);
-
-      // Отримуємо дані з таблиці
-      const response = await this.sheets.spreadsheets.get({
-        spreadsheetId: spreadsheetId,
-        ranges: [`${sheetName}!A:S`],
-        includeGridData: true,
-      });
-
-      const sheetData = response.data.sheets[0];
-      if (!sheetData?.data?.[0]) {
-        return [];
-      }
-
-      const gridData = sheetData.data[0];
-      const rowData = gridData.rowData || [];
-      
-      // Знаходимо заголовки (припускаємо що заголовки в рядку 2)
-      const headerRowIndex = 1; // Рядок 2 в таблиці (індекс 1)
-      if (headerRowIndex >= rowData.length) {
-        return [];
-      }
-
-      const headerCells = rowData[headerRowIndex].values;
-      const headers = headerCells.map(cell => {
-        return (cell?.formattedValue || cell?.effectiveValue?.stringValue || '').toLowerCase().trim();
-      });
-
-      console.log(`📋 Заголовки (всього ${headers.length}):`, headers);
-      
-      // Знаходимо індекси колонок
-      const getIndex = (searchTerms) => {
-        for (let i = 0; i < headers.length; i++) {
-          const h = headers[i];
-          if (searchTerms.some(term => h.includes(term))) {
-            console.log(`  ✅ Знайдено "${headers[i]}" за "${searchTerms.join('" або "')}" -> колонка ${i}`);
-            return i;
-          }
-        }
-        console.log(`  ❌ Не знайдено колонку за "${searchTerms.join('" або "')}"`);
-        return -1;
-      };
-
-      const colDate = 0; // Дата в першій колонці (колонка A)
-      console.log(`📅 Дата: колонка ${colDate}`);
-      const colAmountUAH = getIndex(['сума внеску', 'гривнях']);
-      const colUSDRate = getIndex(['курс долара', 'usd', 'долар']);
-      
-      // Ментор
-      const colMentorPercent = getIndex(['% ментору']);
-      const colMentorShareUSD = getIndex(['частка поточної виплати в доларах', 'частка ментору в доларах']);
-      const colMentorShareUAH = getIndex(['частка з поточної виплати в гривнях']);
-      const colMentorTotalUSD = getIndex(['всього в доларах']);
-      const colMentorTotalUAH = getIndex(['всього віддано в гривнях']);
-      const colMentorRemainder = getIndex(['залишок виплат в доларах']);
-      
-      // Школа
-      const colSchoolPercent = getIndex(['% школі']);
-      const colSchoolShareUSD = getIndex(['частка з поточної виплати в доларах']);
-      const colSchoolShareUAH = getIndex(['частка з поточної виплати в гривнях']);
-      const colSchoolTotalUSD = getIndex(['всього віддано в доларах']);
-      const colSchoolTotalUAH = getIndex(['всього віддано в гривнях']);
-      const colSchoolRemainder = getIndex(['залишок виплат школі']);
-      
-      // Загальні
-      const colTotalUAH = getIndex(['всього віддано в гривнях (₴)']);
-      const colTotalUSD = getIndex(['всього віддано в доларах ($)']);
-      const colTotalRemainder = getIndex(['загальний залишок до виплати в доларах']);
-
-      console.log(`\n📊 Знайдені індекси колонок:`);
-      console.log(`  Дата: ${colDate}`);
-      console.log(`  Сума UAH: ${colAmountUAH}`);
-      console.log(`  Курс USD: ${colUSDRate}`);
-      console.log(`  Ментор %: ${colMentorPercent}, USD: ${colMentorShareUSD}, UAH: ${colMentorShareUAH}, Total USD: ${colMentorTotalUSD}, Total UAH: ${colMentorTotalUAH}, Remainder: ${colMentorRemainder}`);
-      console.log(`  Школа %: ${colSchoolPercent}, USD: ${colSchoolShareUSD}, UAH: ${colSchoolShareUAH}, Total USD: ${colSchoolTotalUSD}, Total UAH: ${colSchoolTotalUAH}, Remainder: ${colSchoolRemainder}`);
-      console.log(`  Total UAH: ${colTotalUAH}, Total USD: ${colTotalUSD}, Total Remainder: ${colTotalRemainder}\n`);
-
-      const parseNumber = (cell) => {
-        if (!cell) return null;
-        const val = cell.formattedValue || cell.effectiveValue?.numberValue || cell.effectiveValue?.stringValue || '';
-        if (typeof val === 'number') return val;
-        const n = parseFloat(String(val).replace(/[^0-9.,-]/g, '').replace(',', '.'));
-        return isNaN(n) ? null : n;
-      };
-
-      const transactions = [];
-
-      // Читаємо всі рядки даних (починаючи з рядка після заголовків)
-      console.log(`📊 Всього рядків даних: ${rowData.length}, починаємо з індексу ${headerRowIndex + 1}`);
-      for (let i = headerRowIndex + 1; i < rowData.length; i++) {
-        const row = rowData[i]?.values || [];
-        
-        // Пропускаємо порожні рядки
-        if (row.length === 0) continue;
-        
-        const date = row[colDate]?.formattedValue || row[colDate]?.effectiveValue?.stringValue || '';
-        
-        if (i === headerRowIndex + 1) {
-          console.log(`  🔍 Перший рядок даних: ${date}`);
-        }
-        
-        // Якщо немає дати - пропускаємо рядок
-        if (!date || date.trim() === '') continue;
-        
-        // Парсимо всі поля
-        const amountUAH = parseNumber(row[colAmountUAH]) || 0;
-        const usdRate = parseNumber(row[colUSDRate]) || 0;
-        const amountUSD = usdRate > 0 ? amountUAH / usdRate : 0;
-        
-        transactions.push({
-          date: date.trim(),
-          amount_uah: amountUAH,
-          usd_rate: usdRate,
-          amount_usd: amountUSD,
-          mentor_percent: parseNumber(row[colMentorPercent]) || 0,
-          mentor_share_usd: parseNumber(row[colMentorShareUSD]) || 0,
-          mentor_share_uah: parseNumber(row[colMentorShareUAH]) || 0,
-          mentor_total_usd: parseNumber(row[colMentorTotalUSD]) || 0,
-          mentor_total_uah: parseNumber(row[colMentorTotalUAH]) || 0,
-          mentor_remainder_usd: parseNumber(row[colMentorRemainder]) || 0,
-          school_percent: parseNumber(row[colSchoolPercent]) || 0,
-          school_share_usd: parseNumber(row[colSchoolShareUSD]) || 0,
-          school_share_uah: parseNumber(row[colSchoolShareUAH]) || 0,
-          school_total_usd: parseNumber(row[colSchoolTotalUSD]) || 0,
-          school_total_uah: parseNumber(row[colSchoolTotalUAH]) || 0,
-          school_remainder_usd: parseNumber(row[colSchoolRemainder]) || 0,
-          total_uah: parseNumber(row[colTotalUAH]) || 0,
-          total_usd: parseNumber(row[colTotalUSD]) || 0,
-          total_remainder_usd: parseNumber(row[colTotalRemainder]) || 0
-        });
-      }
-
-      console.log(`✅ Знайдено ${transactions.length} транзакцій для ${studentName}`);
-      return transactions;
-    } catch (error) {
-      console.error('❌ Помилка завантаження історії оплат:', error.message);
-      return [];
-    }
-  }
 
 }
 
