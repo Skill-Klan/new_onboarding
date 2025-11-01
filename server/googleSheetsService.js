@@ -476,28 +476,28 @@ class GoogleSheetsService {
       const colName = getIndex(["ім'я", "name", "студент"]);
 
 
-      const colTotalUAH = getIndex(["всього віддано", "uah", "грн"]);
+      const colTotalUAH = getIndex(["всього віддано в гривнях", "uah", "грн"]);
 
 
-      const colTotalUSD = getIndex(["всього віддано", "usd", "долар"]);
+      const colTotalUSD = getIndex(["всього віддано в доларах", "usd"]);
 
 
-      const colSchoolUAH = getIndex(["віддано школі", "школа", "uah"]);
+      const colSchoolUAH = getIndex(["всього віддано школі в гривнях", "школа uah"]);
 
 
-      const colSchoolUSD = getIndex(["віддано школі", "школа", "usd", "долар"]);
+      const colSchoolUSD = getIndex(["всього віддано школі в доларах", "школа в доларах"]);
 
 
-      const colRemainderSchool = getIndex(["залишок школі", "remainder"]);
+      const colRemainderSchool = getIndex(["залишок школі в доларах", "залишок школі"]);
 
 
-      const colRemainderMentor = getIndex(["залишок ментору", "ментор"]);
+      const colRemainderMentor = getIndex(["залишок ментору в доларах", "залишок ментору"]);
 
 
-      const colTotalRemainder = getIndex(["загальний залишок", "total remainder"]);
+      const colTotalRemainder = getIndex(["загальний залишок до виплати в доларах", "загальний залишок"]);
 
 
-      const colPaymentStatus = getIndex(["статус", "status", "розрахувався"]);
+      const colPaymentStatus = getIndex(["статус виплат", "статус", "status"]);
 
 
 
