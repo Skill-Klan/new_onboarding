@@ -814,8 +814,6 @@ class GoogleSheetsService {
 
   async getPaymentHistory(studentName) {
     try {
-      console.log(`📜 Завантаження історії оплат для: ${studentName}`);
-
       if (!this.sheets) {
         await this.initialize();
       }
@@ -847,13 +845,11 @@ class GoogleSheetsService {
 
         if (matchingFile) {
           spreadsheetId = matchingFile.id;
-          console.log(`✅ Знайдено таблицю: ${matchingFile.name} (ID: ${spreadsheetId})`);
           break;
         }
       }
 
       if (!spreadsheetId) {
-        console.log(`❌ Таблиця для студента "${studentName}" не знайдена`);
         return [];
       }
 
@@ -864,12 +860,10 @@ class GoogleSheetsService {
 
       const sheets = sheetsResponse.data.sheets || [];
       if (sheets.length === 0) {
-        console.log(`❌ Таблиця не містить листів`);
         return [];
       }
 
       const sheetName = sheets[0].properties.title;
-      console.log(`📄 Використовуємо лист: ${sheetName}`);
 
       // Отримуємо дані з таблиці
       const response = await this.sheets.spreadsheets.get({
@@ -897,23 +891,18 @@ class GoogleSheetsService {
         return (cell?.formattedValue || cell?.effectiveValue?.stringValue || '').toLowerCase().trim();
       });
 
-      console.log(`📋 Заголовки (всього ${headers.length}):`, headers);
-      
       // Знаходимо індекси колонок
       const getIndex = (searchTerms) => {
         for (let i = 0; i < headers.length; i++) {
           const h = headers[i];
           if (searchTerms.some(term => h.includes(term))) {
-            console.log(`  ✅ Знайдено "${headers[i]}" за "${searchTerms.join('" або "')}" -> колонка ${i}`);
             return i;
           }
         }
-        console.log(`  ❌ Не знайдено колонку за "${searchTerms.join('" або "')}"`);
         return -1;
       };
 
       const colDate = 0; // Дата в першій колонці (колонка A)
-      console.log(`📅 Дата: колонка ${colDate}`);
       const colAmountUAH = getIndex(['сума внеску', 'гривнях']);
       const colUSDRate = getIndex(['курс долара', 'usd', 'долар']);
       
@@ -938,14 +927,6 @@ class GoogleSheetsService {
       const colTotalUSD = getIndex(['всього віддано в доларах ($)']);
       const colTotalRemainder = getIndex(['загальний залишок до виплати в доларах']);
 
-      console.log(`\n📊 Знайдені індекси колонок:`);
-      console.log(`  Дата: ${colDate}`);
-      console.log(`  Сума UAH: ${colAmountUAH}`);
-      console.log(`  Курс USD: ${colUSDRate}`);
-      console.log(`  Ментор %: ${colMentorPercent}, USD: ${colMentorShareUSD}, UAH: ${colMentorShareUAH}, Total USD: ${colMentorTotalUSD}, Total UAH: ${colMentorTotalUAH}, Remainder: ${colMentorRemainder}`);
-      console.log(`  Школа %: ${colSchoolPercent}, USD: ${colSchoolShareUSD}, UAH: ${colSchoolShareUAH}, Total USD: ${colSchoolTotalUSD}, Total UAH: ${colSchoolTotalUAH}, Remainder: ${colSchoolRemainder}`);
-      console.log(`  Total UAH: ${colTotalUAH}, Total USD: ${colTotalUSD}, Total Remainder: ${colTotalRemainder}\n`);
-
       const parseNumber = (cell) => {
         if (!cell) return null;
         const val = cell.formattedValue || cell.effectiveValue?.numberValue || cell.effectiveValue?.stringValue || '';
@@ -957,7 +938,6 @@ class GoogleSheetsService {
       const transactions = [];
 
       // Читаємо всі рядки даних (починаючи з рядка після заголовків)
-      console.log(`📊 Всього рядків даних: ${rowData.length}, починаємо з індексу ${headerRowIndex + 1}`);
       for (let i = headerRowIndex + 1; i < rowData.length; i++) {
         const row = rowData[i]?.values || [];
         
@@ -965,10 +945,6 @@ class GoogleSheetsService {
         if (row.length === 0) continue;
         
         const date = row[colDate]?.formattedValue || row[colDate]?.effectiveValue?.stringValue || '';
-        
-        if (i === headerRowIndex + 1) {
-          console.log(`  🔍 Перший рядок даних: ${date}`);
-        }
         
         // Якщо немає дати - пропускаємо рядок
         if (!date || date.trim() === '') continue;
@@ -1001,10 +977,9 @@ class GoogleSheetsService {
         });
       }
 
-      console.log(`✅ Знайдено ${transactions.length} транзакцій для ${studentName}`);
       return transactions;
     } catch (error) {
-      console.error('❌ Помилка завантаження історії оплат:', error.message);
+      console.error('Помилка завантаження історії оплат:', error.message);
       return [];
     }
   }
