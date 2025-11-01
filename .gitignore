@@ -62,3 +62,6 @@ logs/
 
 # SSH keys (local only)
 .ssh_config
+*.json
+server/*.bak*
+server/*.backup*
