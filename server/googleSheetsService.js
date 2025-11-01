@@ -159,6 +159,8 @@ class GoogleSheetsService {
       const colTotalGivenUSD = getIndex('всього віддано в доларах');
       const colTotalGivenToSchoolUSD = getIndex('всього віддано школі в доларах');
       const colRemainderSchool = getIndex('залишок школі в доларах');
+      const colRemainderMentor = getIndex('залишок ментору в доларах');
+      const colTotalRemainder = getIndex('загальний залишок до виплати в доларах');
       const colPaymentStatus = getIndex('статус виплат');
 
       const parseNumber = (cell) => {
@@ -181,6 +183,8 @@ class GoogleSheetsService {
         const totalGivenUSD = parseNumber(row[colTotalGivenUSD]);
         const totalGivenToSchoolUSD = parseNumber(row[colTotalGivenToSchoolUSD]);
         const remainderToSchoolUSD = parseNumber(row[colRemainderSchool]);
+        const remainderToMentorUSD = parseNumber(row[colRemainderMentor]);
+        const totalRemainderUSD = parseNumber(row[colTotalRemainder]);
         const paymentStatus = row[colPaymentStatus]?.formattedValue || row[colPaymentStatus]?.effectiveValue?.stringValue || null;
 
         students.push({
@@ -188,6 +192,8 @@ class GoogleSheetsService {
           total_given_usd: totalGivenUSD,
           total_given_to_school_usd: totalGivenToSchoolUSD,
           remainder_to_school_usd: remainderToSchoolUSD,
+          remainder_to_mentor_usd: remainderToMentorUSD,
+          total_remainder_usd: totalRemainderUSD,
           payment_status: paymentStatus
         });
       }
