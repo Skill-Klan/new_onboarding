@@ -908,16 +908,16 @@ class GoogleSheetsService {
       
       // Ментор
       const colMentorPercent = getIndex(['% ментору']);
-      const colMentorShareUSD = getIndex(['частка поточної виплати в доларах', 'частка ментору в доларах']);
-      const colMentorShareUAH = getIndex(['частка з поточної виплати в гривнях']);
+      const colMentorShareUSD = colMentorPercent !== -1 ? colMentorPercent + 1 : getIndex(['частка поточної виплати в доларах', 'частка ментору в доларах']);
+      const colMentorShareUAH = colMentorPercent !== -1 ? colMentorPercent + 2 : getIndex(['частка з поточної виплати в гривнях']);
       const colMentorTotalUSD = getIndex(['всього в доларах']);
       const colMentorTotalUAH = getIndex(['всього віддано в гривнях']);
       const colMentorRemainder = getIndex(['залишок виплат в доларах']);
       
       // Школа
       const colSchoolPercent = getIndex(['% школі']);
-      const colSchoolShareUSD = getIndex(['частка з поточної виплати в доларах']);
-      const colSchoolShareUAH = getIndex(['частка з поточної виплати в гривнях']);
+      const colSchoolShareUSD = colSchoolPercent !== -1 ? colSchoolPercent + 1 : getIndex(['частка з поточної виплати в доларах']);
+      const colSchoolShareUAH = colSchoolPercent !== -1 ? colSchoolPercent + 2 : getIndex(['частка з поточної виплати в гривнях']);
       const colSchoolTotalUSD = getIndex(['всього віддано в доларах']);
       const colSchoolTotalUAH = getIndex(['всього віддано в гривнях']);
       const colSchoolRemainder = getIndex(['залишок виплат школі']);
@@ -935,6 +935,12 @@ class GoogleSheetsService {
         return isNaN(n) ? null : n;
       };
 
+      // Функція для парсингу відсотків
+      const parsePercent = (cell) => {
+        const val = parseNumber(cell);
+        if (val === null || val === undefined) return null;
+        return val < 1 ? val * 100 : val;
+      };
       const transactions = [];
 
       // Читаємо всі рядки даних (починаючи з рядка після заголовків)
@@ -954,18 +960,22 @@ class GoogleSheetsService {
         const usdRate = parseNumber(row[colUSDRate]) || 0;
         const amountUSD = usdRate > 0 ? amountUAH / usdRate : 0;
         
+        // Генеруємо унікальний ID на основі індексу рядка та дати
+        const uniqueId = `row-${i}-${date.trim()}`;
+        
         transactions.push({
+          id: uniqueId,
           date: date.trim(),
           amount_uah: amountUAH,
           usd_rate: usdRate,
           amount_usd: amountUSD,
-          mentor_percent: parseNumber(row[colMentorPercent]) || 0,
+          mentor_percent: parsePercent(row[colMentorPercent]) || 0,
           mentor_share_usd: parseNumber(row[colMentorShareUSD]) || 0,
           mentor_share_uah: parseNumber(row[colMentorShareUAH]) || 0,
           mentor_total_usd: parseNumber(row[colMentorTotalUSD]) || 0,
           mentor_total_uah: parseNumber(row[colMentorTotalUAH]) || 0,
           mentor_remainder_usd: parseNumber(row[colMentorRemainder]) || 0,
-          school_percent: parseNumber(row[colSchoolPercent]) || 0,
+          school_percent: parsePercent(row[colSchoolPercent]) || 0,
           school_share_usd: parseNumber(row[colSchoolShareUSD]) || 0,
           school_share_uah: parseNumber(row[colSchoolShareUAH]) || 0,
           school_total_usd: parseNumber(row[colSchoolTotalUSD]) || 0,
