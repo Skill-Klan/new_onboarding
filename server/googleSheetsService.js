@@ -935,12 +935,6 @@ class GoogleSheetsService {
         return isNaN(n) ? null : n;
       };
 
-      // Функція для парсингу відсотків
-      const parsePercent = (cell) => {
-        const val = parseNumber(cell);
-        if (val === null || val === undefined) return null;
-        return val < 1 ? val * 100 : val;
-      };
       const transactions = [];
 
       // Читаємо всі рядки даних (починаючи з рядка після заголовків)
@@ -969,13 +963,13 @@ class GoogleSheetsService {
           amount_uah: amountUAH,
           usd_rate: usdRate,
           amount_usd: amountUSD,
-          mentor_percent: parsePercent(row[colMentorPercent]) || 0,
+          mentor_percent: parseNumber(row[colMentorPercent]) || 0,
           mentor_share_usd: parseNumber(row[colMentorShareUSD]) || 0,
           mentor_share_uah: parseNumber(row[colMentorShareUAH]) || 0,
           mentor_total_usd: parseNumber(row[colMentorTotalUSD]) || 0,
           mentor_total_uah: parseNumber(row[colMentorTotalUAH]) || 0,
           mentor_remainder_usd: parseNumber(row[colMentorRemainder]) || 0,
-          school_percent: parsePercent(row[colSchoolPercent]) || 0,
+          school_percent: parseNumber(row[colSchoolPercent]) || 0,
           school_share_usd: parseNumber(row[colSchoolShareUSD]) || 0,
           school_share_uah: parseNumber(row[colSchoolShareUAH]) || 0,
           school_total_usd: parseNumber(row[colSchoolTotalUSD]) || 0,
