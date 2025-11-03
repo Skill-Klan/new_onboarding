@@ -990,4 +990,159 @@ class GoogleSheetsService {
 
 }
 
+
+  // Отримує відкладені платежі
+  async getDeferredPayments() {
+    try {
+      if (!this.sheets) {
+        await this.initialize();
+      }
+
+      const deferredSheetName = 'Відкладені платежі';
+      
+      // Перевіряємо, чи існує лист
+      const spreadsheet = await this.sheets.spreadsheets.get({
+        spreadsheetId: SPREADSHEET_ID,
+      });
+
+      const sheetExists = spreadsheet.data.sheets?.some(
+        sheet => sheet.properties?.title === deferredSheetName
+      );
+
+      if (!sheetExists) {
+        // Якщо листа немає - повертаємо порожній масив
+        return [];
+      }
+
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${deferredSheetName}!A1:G1000`,
+      });
+
+      const rows = response.data.values || [];
+      if (rows.length <= 1) {
+        return [];
+      }
+
+      const headers = rows[0];
+      const getIndex = (titles) => {
+        const titlesLower = titles.map(t => t.toLowerCase());
+        for (let i = 0; i < headers.length; i++) {
+          const h = (headers[i] || '').toLowerCase().trim();
+          if (titlesLower.some(t => h.includes(t))) return i;
+        }
+        return -1;
+      };
+
+      const colStudentName = getIndex(['студент', 'ім'я', 'student']);
+      const colFromMonth = getIndex(['з місяця', 'from_month', 'від місяця']);
+      const colFromYear = getIndex(['з року', 'from_year', 'від року']);
+      const colToMonth = getIndex(['на місяць', 'to_month', 'до місяця']);
+      const colToYear = getIndex(['на рік', 'to_year', 'до року']);
+
+      const monthNames = ['', 'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+                         'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
+
+      const deferredPayments = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length === 0) continue;
+
+        const studentName = (row[colStudentName] || '').trim();
+        if (!studentName) continue;
+
+        const fromMonth = parseInt(row[colFromMonth]) || 0;
+        const fromYear = parseInt(row[colFromYear]) || 0;
+        const toMonth = parseInt(row[colToMonth]) || 0;
+        const toYear = parseInt(row[colToYear]) || 0;
+
+        if (fromMonth > 0 && fromYear > 0 && toMonth > 0 && toYear > 0) {
+          deferredPayments.push({
+            id: `${studentName}-${fromYear}-${fromMonth}`,
+            student_name: studentName,
+            deferred_from_month: fromMonth,
+            deferred_from_year: fromYear,
+            deferred_to_month: toMonth,
+            deferred_to_year: toYear,
+            deferred_to_month_name: monthNames[toMonth] || ''
+          });
+        }
+      }
+
+      return deferredPayments;
+    } catch (error) {
+      console.error('❌ Помилка отримання відкладених платежів:', error.message);
+      return [];
+    }
+  }
+
+  // Додає відкладений платіж
+  async deferPayment(studentName, fromMonth, fromYear, toMonth, toYear) {
+    try {
+      if (!this.sheetsWrite) {
+        await this.initializeWrite();
+      }
+
+      const deferredSheetName = 'Відкладені платежі';
+      
+      // Перевіряємо, чи існує лист
+      const spreadsheet = await this.sheetsWrite.spreadsheets.get({
+        spreadsheetId: SPREADSHEET_ID,
+      });
+
+      let sheetExists = spreadsheet.data.sheets?.some(
+        sheet => sheet.properties?.title === deferredSheetName
+      );
+
+      if (!sheetExists) {
+        // Створюємо новий лист
+        await this.sheetsWrite.spreadsheets.batchUpdate({
+          spreadsheetId: SPREADSHEET_ID,
+          resource: {
+            requests: [{
+              addSheet: {
+                properties: {
+                  title: deferredSheetName,
+                }
+              }
+            }]
+          }
+        });
+
+        // Додаємо заголовки
+        await this.sheetsWrite.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${deferredSheetName}!A1:E1`,
+          valueInputOption: 'RAW',
+          resource: {
+            values: [['Студент', 'З місяця', 'З року', 'На місяць', 'На рік']]
+          }
+        });
+      }
+
+      const monthNames = ['', 'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+                         'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
+
+      // Додаємо новий рядок
+      await this.sheetsWrite.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${deferredSheetName}!A:E`,
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        resource: {
+          values: [[studentName, fromMonth, fromYear, toMonth, toYear]]
+        }
+      });
+
+      return {
+        success: true,
+        message: `Студент ${studentName} перенесений на ${monthNames[toMonth]} ${toYear}`
+      };
+    } catch (error) {
+      console.error('❌ Помилка перенесення платежу:', error.message);
+      throw error;
+    }
+  }
+
 module.exports = new GoogleSheetsService();

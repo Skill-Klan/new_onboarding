@@ -259,7 +259,7 @@ app.get('/api/students', async (req, res) => {
     const statusFilter = req.query.status; // офер/студент
     
     // Формуємо SQL запит
-    let query = "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
+    let query = "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, is_mentor FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
     const params = [];
     
     // Додаємо фільтр по ментору
@@ -292,7 +292,8 @@ app.get('/api/students', async (req, res) => {
       created_at: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       notes: row.notes || null,
       discord_username: row.discord_username || null,
-      contract: row.contract || false
+      contract: row.contract || false,
+      is_mentor: row.is_mentor || false
     }));
     
     res.json({
@@ -321,7 +322,7 @@ app.get('/api/students/:id', async (req, res) => {
     
     // Отримуємо студента по phone_number
     const result = await pool.query(
-      "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract FROM users WHERE phone_number = $1 AND (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))",
+      "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, is_mentor FROM users WHERE phone_number = $1 AND (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))",
       [studentId]
     );
     
@@ -344,6 +345,7 @@ app.get('/api/students/:id', async (req, res) => {
       notes: row.notes || null,
       discord_username: row.discord_username || null,
       contract: row.contract || false,
+      is_mentor: row.is_mentor || false,
     };
     
     // Отримуємо контракти (якщо таблиця існує)
@@ -651,6 +653,7 @@ app.put('/api/students/:id', async (req, res) => {
       notes: row.notes || null,
       discord_username: row.discord_username || null,
       contract: row.contract || false,
+      is_mentor: row.is_mentor || false,
     };
     
     res.json({
@@ -1041,3 +1044,65 @@ try {
 }
 // ===== End get payment history endpoint =====
 
+
+
+// ===== Get deferred payments endpoint =====
+try {
+  const googleSheetsService = require('./googleSheetsService');
+  
+  app.get('/api/payments/deferred', async (req, res) => {
+    try {
+      const deferredPayments = await googleSheetsService.getDeferredPayments();
+      res.json({ deferred_payments: deferredPayments });
+    } catch (error) {
+      console.error('❌ Помилка отримання відкладених платежів:', error);
+      res.status(500).json({ 
+        error: 'Помилка отримання відкладених платежів', 
+        details: error.message 
+      });
+    }
+  });
+} catch (e) {
+  console.error('⚠️ Не вдалося ініціалізувати endpoint /api/payments/deferred:', e.message);
+}
+// ===== End get deferred payments endpoint =====
+// ===== Defer payment endpoint =====
+try {
+  const googleSheetsService = require('./googleSheetsService');
+  
+  app.post('/api/payments/defer', async (req, res) => {
+    try {
+      const { student_name, from_month, from_year, to_month, to_year } = req.body;
+      
+      if (!student_name || !from_month || !from_year || !to_month || !to_year) {
+        return res.status(400).json({ 
+          error: 'Відсутні обов'язкові поля: student_name, from_month, from_year, to_month, to_year'
+        });
+      }
+      
+      console.log(`📝 Перенесення студента ${student_name} з ${from_month}/${from_year} на ${to_month}/${to_year}`);
+      
+      const result = await googleSheetsService.deferPayment(
+        student_name,
+        from_month,
+        from_year,
+        to_month,
+        to_year
+      );
+      
+      res.json({ 
+        success: true,
+        message: result.message || 'Платіж відкладено успішно'
+      });
+    } catch (error) {
+      console.error('❌ Помилка перенесення платежу:', error);
+      res.status(500).json({ 
+        error: 'Помилка перенесення платежу', 
+        details: error.message 
+      });
+    }
+  });
+} catch (e) {
+  console.error('⚠️ Не вдалося ініціалізувати endpoint /api/payments/defer:', e.message);
+}
+// ===== End defer payment endpoint =====
