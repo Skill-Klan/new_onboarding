@@ -1141,5 +1141,6 @@ class GoogleSheetsService {
     }
 }
 
+}
 
-  // Отримує відкладені платежі
+module.exports = new GoogleSheetsService();
