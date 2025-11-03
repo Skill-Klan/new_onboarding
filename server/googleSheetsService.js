@@ -988,10 +988,6 @@ class GoogleSheetsService {
     }
   }
 
-}
-
-
-  // Отримує відкладені платежі
   async getDeferredPayments() {
     try {
       if (!this.sheets) {
@@ -1034,7 +1030,7 @@ class GoogleSheetsService {
         return -1;
       };
 
-      const colStudentName = getIndex(['студент', 'ім'я', 'student']);
+      const colStudentName = getIndex(['студент', 'ім\'я', 'student']);
       const colFromMonth = getIndex(['з місяця', 'from_month', 'від місяця']);
       const colFromYear = getIndex(['з року', 'from_year', 'від року']);
       const colToMonth = getIndex(['на місяць', 'to_month', 'до місяця']);
@@ -1143,6 +1139,7 @@ class GoogleSheetsService {
       console.error('❌ Помилка перенесення платежу:', error.message);
       throw error;
     }
-  }
+}
 
-module.exports = new GoogleSheetsService();
+
+  // Отримує відкладені платежі
