@@ -4,6 +4,25 @@ const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
+// ============================================
+// Authentication & Authorization Modules
+// ============================================
+
+// Middleware
+const { authenticateToken } = require('./server/middleware/authMiddleware');
+const { requireAdmin, requireAdminOrMentor } = require('./server/middleware/authorizationMiddleware');
+const { filterMentorData } = require('./server/middleware/mentorDataFilterMiddleware');
+const { errorHandler } = require('./server/middleware/errorHandler');
+const { validateRegister, validateLogin, validateRefreshToken } = require('./server/middleware/validationMiddleware');
+const { loginLimiter, registerLimiter } = require('./server/middleware/rateLimiter');
+
+// Routes
+const authRoutes = require('./server/routes/authRoutes');
+
+// Utils
+const { startTokenCleanup } = require('./server/utils/tokenCleanup');
+
+
 // Імпорт нового FlowBot
 const FlowBot = require('./bot/FlowBot');
 
@@ -28,6 +47,10 @@ const pool = new Pool({
 });
 
 // Тест підключення до БД
+
+// Додати pool до app.locals для доступу в middleware
+app.locals.db = pool;
+
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('Database connection error:', err);
@@ -37,6 +60,13 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 // Health check endpoint
+
+// ============================================
+// Authentication Routes
+// ============================================
+app.use('/api/auth', authRoutes);
+
+
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -193,7 +223,7 @@ app.get('/api/admin/requests', async (req, res) => {
 // Dashboard stats endpoint for iOS app
 // Dashboard stats endpoint for iOS app - виправлено
 // Dashboard stats endpoint for iOS app - виправлено працевлаштовані
-app.get('/api/dashboard/stats', async (req, res) => {
+app.get("/api/dashboard/stats", authenticateToken, filterMentorData, async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -243,7 +273,7 @@ app.get('/api/dashboard/stats', async (req, res) => {
 // Students endpoint for iOS app з фільтрацією
 // Students endpoint for iOS app з фільтрацією
 // Students endpoint for iOS app з фільтрацією
-app.get('/api/students', async (req, res) => {
+app.get("/api/students", authenticateToken, filterMentorData, async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -259,8 +289,14 @@ app.get('/api/students', async (req, res) => {
     const statusFilter = req.query.status; // офер/студент
     
     // Формуємо SQL запит
-    let query = "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, is_mentor FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
+    let query = "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, is_mentor, offer_date, referral_program FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
     const params = [];
+    
+    // Додаємо фільтр для менторів (якщо це ментор)
+    if (req.mentorFilter) {
+      params.push(req.mentorFilter.mentorName);
+      query += " AND mentor_name = $" + params.length;
+    }
     
     // Додаємо фільтр по ментору
     if (mentorFilter) {
@@ -293,7 +329,9 @@ app.get('/api/students', async (req, res) => {
       notes: row.notes || null,
       discord_username: row.discord_username || null,
       contract: row.contract || false,
-      is_mentor: row.is_mentor || false
+      is_mentor: row.is_mentor || false,
+      offer_date: row.offer_date ? new Date(row.offer_date).toISOString() : null,
+      referral_program: row.referral_program || null,
     }));
     
     res.json({
@@ -307,7 +345,7 @@ app.get('/api/students', async (req, res) => {
 });
 
 // Student detail endpoint
-app.get('/api/students/:id', async (req, res) => {
+app.get("/api/students/:id", authenticateToken, filterMentorData, async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -322,7 +360,7 @@ app.get('/api/students/:id', async (req, res) => {
     
     // Отримуємо студента по phone_number
     const result = await pool.query(
-      "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, is_mentor FROM users WHERE phone_number = $1 AND (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))",
+      "SELECT phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, is_mentor, offer_date, referral_program FROM users WHERE phone_number = $1 AND (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))",
       [studentId]
     );
     
@@ -346,7 +384,19 @@ app.get('/api/students/:id', async (req, res) => {
       discord_username: row.discord_username || null,
       contract: row.contract || false,
       is_mentor: row.is_mentor || false,
+      offer_date: row.offer_date ? new Date(row.offer_date).toISOString() : null,
+      referral_program: row.referral_program || null,
     };
+    
+    // Перевірка доступу для менторів
+    if (req.mentorFilter) {
+      if (student.mentor_name !== req.mentorFilter.mentorName) {
+        return res.status(403).json({
+          error: "Доступ заборонено",
+          message: "Ви не маєте доступу до цього студента"
+        });
+      }
+    }
     
     // Отримуємо контракти (якщо таблиця існує)
     let contracts = [];
@@ -410,7 +460,7 @@ app.get('/api/students/:id', async (req, res) => {
 });
 
 // Student stats endpoint
-app.get('/api/students/:id/stats', async (req, res) => {
+app.get("/api/students/:id/stats", authenticateToken, filterMentorData, async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -546,7 +596,7 @@ app.get('/api/check-user/:telegramId', async (req, res) => {
     res.status(500).json({ error: 'Помилка перевірки користувача' });
   }
 });
-app.put('/api/students/:id', async (req, res) => {
+app.put("/api/students/:id", authenticateToken, requireAdminOrMentor(), filterMentorData, async (req, res) => {
   try {
     const { Pool } = require('pg');
     const pool = new Pool({
@@ -613,6 +663,51 @@ app.put('/api/students/:id', async (req, res) => {
       values.push(updates.discord_username || null);
     }
     
+    if (updates.offer_date !== undefined) {
+      paramCount++;
+      if (updates.offer_date === null) {
+        updateFields.push(`offer_date = $${paramCount}`);
+        values.push(null);
+      } else {
+        try {
+          let offerDate;
+          if (updates.offer_date.includes('T')) {
+            offerDate = new Date(updates.offer_date);
+          } else {
+            offerDate = new Date(updates.offer_date + 'T00:00:00Z');
+          }
+          if (isNaN(offerDate.getTime())) {
+            return res.status(400).json({ error: 'Невірний формат дати offer_date' });
+          }
+          const now = new Date();
+          if (offerDate > now) {
+            return res.status(400).json({ error: 'Дата оферу не може бути в майбутньому' });
+          }
+          const year = offerDate.getUTCFullYear();
+          const month = String(offerDate.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(offerDate.getUTCDate()).padStart(2, '0');
+          updateFields.push(`offer_date = $${paramCount}`);
+          values.push(`${year}-${month}-${day}`);
+        } catch (error) {
+          return res.status(400).json({ error: `Помилка парсингу дати: ${error.message}` });
+        }
+      }
+    }
+
+    if (updates.referral_program !== undefined) {
+      paramCount++;
+      if (updates.referral_program === null || updates.referral_program === "") {
+        updateFields.push(`referral_program = $${paramCount}`);
+        values.push(null);
+      } else {
+        if (typeof updates.referral_program !== "string") {
+          return res.status(400).json({ error: "referral_program має бути рядком" });
+        }
+        updateFields.push(`referral_program = $${paramCount}`);
+        values.push(updates.referral_program.trim());
+      }
+    }
+
     if (updates.contract !== undefined) {
       paramCount++;
       updateFields.push(`contract = $${paramCount}`);
@@ -630,7 +725,7 @@ app.put('/api/students/:id', async (req, res) => {
     paramCount++;
     values.push(studentId);
     
-    const query = `UPDATE users SET ${updateFields.join(', ')} WHERE phone_number = $${paramCount} RETURNING phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract`;
+    const query = `UPDATE users SET ${updateFields.join(', ')} WHERE phone_number = $${paramCount} RETURNING phone_number, first_name, last_name, email, current_step, direction_of_study, created_at, mentor_name, notes, discord_username, contract, offer_date, referral_program`;
     
     const result = await pool.query(query, values);
     
@@ -654,6 +749,18 @@ app.put('/api/students/:id', async (req, res) => {
       discord_username: row.discord_username || null,
       contract: row.contract || false,
       is_mentor: row.is_mentor || false,
+      offer_date: row.offer_date ? new Date(row.offer_date).toISOString() : null,
+      referral_program: row.referral_program || null,
+    };
+    
+    // Перевірка доступу для менторів
+    if (req.mentorFilter) {
+      if (student.mentor_name !== req.mentorFilter.mentorName) {
+        return res.status(403).json({
+          error: "Доступ заборонено",
+          message: "Ви не маєте доступу до цього студента"
+        });
+      }
     };
     
     res.json({
@@ -845,6 +952,10 @@ async function startServer() {
   // Запускаємо Express сервер ПЕРШИМ
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    
+    // Запустити cron job для очищення токенів
+    startTokenCleanup(pool);
+
   });
 
   // Запускаємо FlowBot в окремому try-catch, щоб не зупиняти сервер
@@ -870,7 +981,7 @@ async function startServer() {
 startServer();
 
 // Endpoint для отримання фінансових даних студента з Google Sheets
-app.get('/api/students/:id/financial', async (req, res) => {
+app.get("/api/students/:id/financial", authenticateToken, filterMentorData, async (req, res) => {
   try {
     const googleSheetsService = require('./googleSheetsService');
     const { Pool } = require('pg');
@@ -925,7 +1036,7 @@ app.get('/api/students/:id/financial', async (req, res) => {
 // ===== Payments summary endpoint for iOS app =====
 try {
   const googleSheetsService = require('./googleSheetsService');
-  app.get('/api/payments/summary', async (req, res) => {
+  app.get("/api/payments/summary", authenticateToken, filterMentorData, async (req, res) => {
     try {
       const { Pool } = require('pg');
       const pool = new Pool({
@@ -965,7 +1076,7 @@ try {
 // ===== Paying students endpoint for iOS app =====
 try {
   const googleSheetsService = require('./googleSheetsService');
-  app.get('/api/payments/payers', async (req, res) => {
+  app.get("/api/payments/payers", authenticateToken, filterMentorData, async (req, res) => {
     try {
       const students = await googleSheetsService.getPayingStudents();
       res.json({ students: students });
@@ -981,7 +1092,7 @@ try {
 // ===== Add payment record endpoint =====
 try {
   const googleSheetsService = require('./googleSheetsService');
-  app.post('/api/payments/add', async (req, res) => {
+  app.post("/api/payments/add", authenticateToken, requireAdmin(), async (req, res) => {
     try {
       const { studentName, paymentDate, amount, usdRate } = req.body;
       
@@ -1017,7 +1128,7 @@ try {
 // ===== Get payment history endpoint =====
 try {
   const googleSheetsService = require('./googleSheetsService');
-  app.get('/api/payments/history/:studentName', async (req, res) => {
+  app.get("/api/payments/history/:studentName", authenticateToken, filterMentorData, async (req, res) => {
     try {
       const { studentName } = req.params;
       
@@ -1050,7 +1161,7 @@ try {
 try {
   const googleSheetsService = require('./googleSheetsService');
   
-  app.get('/api/payments/deferred', async (req, res) => {
+  app.get("/api/payments/deferred", authenticateToken, filterMentorData, async (req, res) => {
     try {
       const deferredPayments = await googleSheetsService.getDeferredPayments();
       res.json({ deferred_payments: deferredPayments });
@@ -1070,18 +1181,32 @@ try {
 try {
   const googleSheetsService = require('./googleSheetsService');
   
-  app.post('/api/payments/defer', async (req, res) => {
+app.post("/api/payments/defer", authenticateToken, requireAdmin(), async (req, res) => {
     try {
       const { student_name, from_month, from_year, to_month, to_year } = req.body;
       
+      // Валідація обов'язкових полів
       if (!student_name || !from_month || !from_year || !to_month || !to_year) {
-        return res.status(400).json({ 
-          error: 'Відсутні обов'язкові поля: student_name, from_month, from_year, to_month, to_year'
+        return res.status(400).json({
+          error: 'Необхідні поля: student_name, from_month, from_year, to_month, to_year'
         });
       }
       
-      console.log(`📝 Перенесення студента ${student_name} з ${from_month}/${from_year} на ${to_month}/${to_year}`);
+      // Валідація місяців (1-12)
+      if (from_month < 1 || from_month > 12 || to_month < 1 || to_month > 12) {
+        return res.status(400).json({
+          error: 'Місяці повинні бути в діапазоні 1-12'
+        });
+      }
       
+      // Валідація років
+      if (from_year < 2020 || from_year > 2100 || to_year < 2020 || to_year > 2100) {
+        return res.status(400).json({
+          error: 'Невірний рік'
+        });
+      }
+      
+      // Викликаємо метод Google Sheets Service для збереження відкладених платежів
       const result = await googleSheetsService.deferPayment(
         student_name,
         from_month,
@@ -1090,19 +1215,63 @@ try {
         to_year
       );
       
-      res.json({ 
+      res.json({
         success: true,
-        message: result.message || 'Платіж відкладено успішно'
+        message: `Платіж студента ${student_name} відкладено з ${from_month}.${from_year} на ${to_month}.${to_year}`,
+        data: result
       });
+      
     } catch (error) {
       console.error('❌ Помилка перенесення платежу:', error);
-      res.status(500).json({ 
-        error: 'Помилка перенесення платежу', 
-        details: error.message 
+      res.status(500).json({
+        error: 'Не вдалося перенести платіж',
+        details: error.message
+      });
+    }
+  });
+
+} catch (e) {
+  console.error("⚠️ Не вдалося ініціалізувати endpoint /api/payments/defer:", e.message);
+}
+// ===== End defer payment endpoint =====
+
+// ===== Remove deferred payment endpoint =====
+try {
+  const googleSheetsService = require('./googleSheetsService');
+  
+  app.delete("/api/payments/defer", authenticateToken, requireAdmin(), async (req, res) => {
+    try {
+      const { student_name, from_month, from_year, to_month, to_year } = req.body;
+      
+      if (!student_name || !from_month || !from_year || !to_month || !to_year) {
+        return res.status(400).json({
+          error: 'Необхідні поля: student_name, from_month, from_year, to_month, to_year'
+        });
+      }
+      
+      const result = await googleSheetsService.removeDeferredPayment(
+        student_name,
+        from_month,
+        from_year,
+        to_month,
+        to_year
+      );
+      
+      res.json({
+        success: true,
+        message: `Відкладений платіж студента ${student_name} видалено`,
+        data: result
+      });
+      
+    } catch (error) {
+      console.error('❌ Помилка видалення відкладеного платежу:', error);
+      res.status(500).json({
+        error: 'Не вдалося видалити відкладений платіж',
+        details: error.message
       });
     }
   });
 } catch (e) {
-  console.error('⚠️ Не вдалося ініціалізувати endpoint /api/payments/defer:', e.message);
+  console.error('⚠️ Не вдалося ініціалізувати endpoint DELETE /api/payments/defer:', e.message);
 }
-// ===== End defer payment endpoint =====
+// ===== End remove deferred payment endpoint =====
