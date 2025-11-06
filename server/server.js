@@ -235,7 +235,14 @@ app.get("/api/dashboard/stats", authenticateToken, filterMentorData, async (req,
     });
     
     // Отримуємо кількість студентів з таблиці users
-    const studentsResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))");
+    // Отримуємо кількість студентів з таблиці users
+    let studentsQuery = "SELECT COUNT(*) as count FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != ''))";
+    const studentsParams = [];
+    if (req.mentorFilter) {
+      studentsQuery += ' AND mentor_name = $' + (studentsParams.length + 1);
+      studentsParams.push(req.mentorFilter.mentorName);
+    }
+    const studentsResult = await pool.query(studentsQuery, studentsParams.length > 0 ? studentsParams : undefined);
     const totalStudents = parseInt(studentsResult.rows[0]?.count || 0);
     
     // Отримуємо кількість менторів з таблиці users
@@ -243,16 +250,39 @@ app.get("/api/dashboard/stats", authenticateToken, filterMentorData, async (req,
     const totalMentors = parseInt(mentorsResult.rows[0]?.count || 0);
     
     // Студенти з тегом офер (працевлаштовані)
-    const employedResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != '')) AND LOWER(TRIM(current_step)) = 'офер'");
+    // Студенти з тегом офер (працевлаштовані)
+    let employedQuery = "SELECT COUNT(*) as count FROM users WHERE (is_mentor IS DISTINCT FROM TRUE OR (is_mentor = TRUE AND current_step IS NOT NULL AND current_step != '')) AND LOWER(TRIM(current_step)) = 'офер'";
+    const employedParams = [];
+    if (req.mentorFilter) {
+      employedQuery += ' AND mentor_name = $' + (employedParams.length + 1);
+      employedParams.push(req.mentorFilter.mentorName);
+    }
+    const employedResult = await pool.query(employedQuery, employedParams.length > 0 ? employedParams : undefined);
     const employedStudents = parseInt(employedResult.rows[0]?.count || 0);
     
     // Виплачені кошти (з таблиці contracts, якщо вона існує)
     let paidAmount = 0;
     try {
-      const contractsResult = await pool.query("SELECT COALESCE(SUM(amount), 0) as total FROM contracts WHERE status IN ('paid', 'completed')");
-      paidAmount = parseFloat(contractsResult.rows[0]?.total || 0);
+      let contractsQuery = "SELECT COALESCE(SUM(amount), 0) as total FROM contracts WHERE status IN ('paid', 'completed')";
+      const contractsParams = [];
+      if (req.mentorFilter) {
+        const mentorStudentsResult = await pool.query(
+          'SELECT phone_number FROM users WHERE mentor_name = $1',
+          [req.mentorFilter.mentorName]
+        );
+        const mentorStudentPhones = mentorStudentsResult.rows.map(row => row.phone_number).filter(phone => phone);
+        if (mentorStudentPhones.length > 0) {
+          contractsQuery += ' AND student_phone = ANY($' + (contractsParams.length + 1) + ')';
+          contractsParams.push(mentorStudentPhones);
+        } else {
+          paidAmount = 0;
+        }
+      }
+      if (!req.mentorFilter || (req.mentorFilter && contractsParams.length > 0)) {
+        const contractsResult = await pool.query(contractsQuery, contractsParams.length > 0 ? contractsParams : undefined);
+        paidAmount = parseFloat(contractsResult.rows[0]?.total || 0);
+      }
     } catch (e) {
-      // Таблиця contracts може не існувати, це нормально
       paidAmount = 0;
     }
     
@@ -1051,8 +1081,25 @@ try {
 
       let paidAmount = 0;
       try {
-        const result = await pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM contracts WHERE status IN ('paid','completed')");
-        paidAmount = parseFloat(result.rows[0]?.total || 0);
+        let contractsQuery = "SELECT COALESCE(SUM(amount), 0) AS total FROM contracts WHERE status IN ('paid','completed')";
+        const contractsParams = [];
+        if (req.mentorFilter) {
+          const mentorStudentsResult = await pool.query(
+            'SELECT phone_number FROM users WHERE mentor_name = $1',
+            [req.mentorFilter.mentorName]
+          );
+          const mentorStudentPhones = mentorStudentsResult.rows.map(row => row.phone_number).filter(phone => phone);
+          if (mentorStudentPhones.length > 0) {
+            contractsQuery += ' AND student_phone = ANY($' + (contractsParams.length + 1) + ')';
+            contractsParams.push(mentorStudentPhones);
+          } else {
+            paidAmount = 0;
+          }
+        }
+        if (!req.mentorFilter || (req.mentorFilter && contractsParams.length > 0)) {
+          const result = await pool.query(contractsQuery, contractsParams.length > 0 ? contractsParams : undefined);
+          paidAmount = parseFloat(result.rows[0]?.total || 0);
+        }
       } catch (e) {
         paidAmount = 0;
       }
@@ -1078,7 +1125,32 @@ try {
   const googleSheetsService = require('./googleSheetsService');
   app.get("/api/payments/payers", authenticateToken, filterMentorData, async (req, res) => {
     try {
-      const students = await googleSheetsService.getPayingStudents();
+      let students = await googleSheetsService.getPayingStudents();
+      // Фільтрація для менторів
+      if (req.mentorFilter) {
+        const { Pool } = require('pg');
+        const pool = new Pool({
+          user: process.env.DB_USER || 'skilluser',
+          host: process.env.DB_HOST || 'localhost',
+          database: process.env.DB_NAME || 'skilldb',
+          password: process.env.DB_PASSWORD || 'skillpass2025',
+          port: process.env.DB_PORT || 5432,
+        });
+        const mentorStudentsResult = await pool.query(
+          'SELECT first_name, last_name FROM users WHERE mentor_name = $1',
+          [req.mentorFilter.mentorName]
+        );
+        const mentorStudentNames = mentorStudentsResult.rows.map(row => {
+          const firstName = row.first_name || '';
+          const lastName = row.last_name || '';
+          return (firstName + ' ' + lastName).trim().toLowerCase();
+        }).filter(name => name);
+        students = students.filter(student => {
+          const studentName = ((student.firstName || '') + ' ' + (student.lastName || '')).trim().toLowerCase();
+          return mentorStudentNames.some(name => studentName.includes(name) || name.includes(studentName));
+        });
+        await pool.end();
+      }
       res.json({ students: students });
     } catch (error) {
       console.error('❌ Помилка отримання списку студентів що виплачують:', error);
@@ -1163,7 +1235,32 @@ try {
   
   app.get("/api/payments/deferred", authenticateToken, filterMentorData, async (req, res) => {
     try {
-      const deferredPayments = await googleSheetsService.getDeferredPayments();
+      let deferredPayments = await googleSheetsService.getDeferredPayments();
+      // Фільтрація для менторів
+      if (req.mentorFilter) {
+        const { Pool } = require('pg');
+        const pool = new Pool({
+          user: process.env.DB_USER || 'skilluser',
+          host: process.env.DB_HOST || 'localhost',
+          database: process.env.DB_NAME || 'skilldb',
+          password: process.env.DB_PASSWORD || 'skillpass2025',
+          port: process.env.DB_PORT || 5432,
+        });
+        const mentorStudentsResult = await pool.query(
+          'SELECT first_name, last_name FROM users WHERE mentor_name = $1',
+          [req.mentorFilter.mentorName]
+        );
+        const mentorStudentNames = mentorStudentsResult.rows.map(row => {
+          const firstName = row.first_name || '';
+          const lastName = row.last_name || '';
+          return (firstName + ' ' + lastName).trim().toLowerCase();
+        }).filter(name => name);
+        deferredPayments = deferredPayments.filter(payment => {
+          const studentName = ((payment.firstName || '') + ' ' + (payment.lastName || '')).trim().toLowerCase();
+          return mentorStudentNames.some(name => studentName.includes(name) || name.includes(studentName));
+        });
+        await pool.end();
+      }
       res.json({ deferred_payments: deferredPayments });
     } catch (error) {
       console.error('❌ Помилка отримання відкладених платежів:', error);
