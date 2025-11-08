@@ -1141,6 +1141,95 @@ class GoogleSheetsService {
     }
 }
 
+    async removeDeferredPayment(studentName, fromMonth, fromYear, toMonth, toYear) {
+        try {
+            if (!this.sheetsWrite) {
+                await this.initializeWrite();
+            }
+
+            const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+            const DEFERRED_SHEET_NAME = "Відкладені платежі";
+
+            let existingData;
+            try {
+                existingData = await this.sheetsWrite.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${DEFERRED_SHEET_NAME}!A:F`
+                });
+            } catch (error) {
+                console.log("⚠️ Лист не існує або помилка: " + error.message);
+                return { success: true, message: "Запис не знайдено або вже видалено" };
+            }
+
+            if (!existingData.data.values || existingData.data.values.length <= 1) {
+                return { success: true, message: "Запис не знайдено" };
+            }
+
+            const rows = existingData.data.values;
+            const dataRows = rows.slice(1);
+
+            let rowIndexToDelete = -1;
+            for (let i = 0; i < dataRows.length; i++) {
+                const row = dataRows[i];
+                if (
+                    row.length >= 5 &&
+                    row[0] === studentName &&
+                    parseInt(row[1]) === fromMonth &&
+                    parseInt(row[2]) === fromYear &&
+                    parseInt(row[3]) === toMonth &&
+                    parseInt(row[4]) === toYear
+                ) {
+                    rowIndexToDelete = i + 2;
+                    break;
+                }
+            }
+
+            if (rowIndexToDelete === -1) {
+                return { success: true, message: "Запис не знайдено" };
+            }
+
+            const spreadsheet = await this.sheetsWrite.spreadsheets.get({
+                spreadsheetId: SPREADSHEET_ID
+            });
+
+            const sheet = spreadsheet.data.sheets.find(
+                s => s.properties.title === DEFERRED_SHEET_NAME
+            );
+
+            if (!sheet) {
+                return { success: true, message: "Лист не знайдено" };
+            }
+
+            const sheetId = sheet.properties.sheetId;
+
+            await this.sheetsWrite.spreadsheets.batchUpdate({
+                spreadsheetId: SPREADSHEET_ID,
+                resource: {
+                    requests: [{
+                        deleteDimension: {
+                            range: {
+                                sheetId: sheetId,
+                                dimension: "ROWS",
+                                startIndex: rowIndexToDelete - 1,
+                                endIndex: rowIndexToDelete
+                            }
+                        }
+                    }]
+                }
+            });
+
+            console.log("✅ Відкладений платіж видалено: " + studentName);
+
+            return {
+                success: true,
+                message: "Відкладений платіж студента " + studentName + " видалено"
+            };
+        } catch (error) {
+            console.error("❌ Помилка видалення відкладеного платежу:", error);
+            throw new Error("Не вдалося видалити відкладений платіж: " + error.message);
+        }
+    }
+
 }
 
 module.exports = new GoogleSheetsService();
